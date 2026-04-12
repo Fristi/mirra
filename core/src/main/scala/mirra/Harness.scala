@@ -6,7 +6,7 @@ import cats.tagless.SemigroupalK
 import cats.{Functor, ~>}
 
 
-class Harnass[Alg[_[_]], F[_], Tx[_], D](initState: D, db: Alg[Tx], model: Alg[Mirra[D, *]], tx: Tx ~> F) {
+class Harness[Alg[_[_]], F[_], Tx[_], D](initState: D, db: Alg[Tx], model: Alg[Mirra[D, *]], tx: Tx ~> F) {
 
   type Eff[A] = Tuple2K[Tx, Mirra[D, *], A]
   type Paired = Alg[Eff]

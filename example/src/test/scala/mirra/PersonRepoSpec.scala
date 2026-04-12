@@ -10,14 +10,14 @@ import org.specs2.mutable.Specification
 
 class PersonRepoSpec extends Specification with DoobieSpec {
 
-  def harnass: Harnass[PersonRepository, IO, ConnectionIO, Universe] =
-    new Harnass(Universe.zero, DoobiePersonRepository, MirraPersonRepository, xa.trans)
+  def harness: Harness[PersonRepository, IO, ConnectionIO, Universe] =
+    new Harness(Universe.zero, DoobiePersonRepository, MirraPersonRepository, xa.trans)
 
   "PersonRepository" should {
     "should insert and read" in {
       prop { persons: List[Person] =>
         assertMirroring {
-          harnass.model.eval { x =>
+          harness.model.eval { x =>
             x.create *>
               x.insertMany(persons) *>
               x.listAll()
@@ -29,7 +29,7 @@ class PersonRepoSpec extends Specification with DoobieSpec {
     "should delete people older then" in {
       prop { (persons: List[Person], age: Int) =>
         assertMirroring {
-          harnass.model.eval { x =>
+          harness.model.eval { x =>
             x.create *>
               x.insertMany(persons) *>
               x.deleteWhenOlderThen(age) *>
