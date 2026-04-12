@@ -1,4 +1,4 @@
-package septic
+package mirra
 
 import cats.effect.IO
 import cats.implicits._
@@ -11,7 +11,7 @@ import org.specs2.mutable.Specification
 class PersonRepoSpec extends Specification with DoobieSpec {
 
   def harnass: Harnass[PersonRepository, IO, ConnectionIO, Universe] =
-    new Harnass(Universe.zero, DoobiePersonRepository, SepticPersonRepository, xa.trans)
+    new Harnass(Universe.zero, DoobiePersonRepository, MirraPersonRepository, xa.trans)
 
   "PersonRepository" should {
     "should insert and read" in {

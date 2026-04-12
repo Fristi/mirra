@@ -1,4 +1,4 @@
-package septic
+package mirra
 
 import cats.tagless.{Derive, FunctorK, SemigroupalK}
 

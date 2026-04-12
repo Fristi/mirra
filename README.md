@@ -1,34 +1,80 @@
-# septic
+# mirra
 
-Septic is a model based property based testing library for tagless final algebras.
+**Mirror-test your tagless final algebras in Scala.**
 
-## Rationale
+Mirra verifies that a real repository implementation behaves the same way as a simple in-memory model — using property-based testing to catch the bugs you'd never think to write a case for.
 
-Improve the situation of testing repository and API clients. 
+> **Status:** This project is not active and was a proof-of-concept. It may still be useful as a reference or starting point.
 
-Tagless final algebras can come in many forms, the scope of library is to offer utitilies to make testing of properties easier for repository and api tagless final algebras.
+## The problem: duplicated expectations
 
-### Typical properties tested
+When you property-test a repository directly, you end up re-implementing its logic in your assertions. Suppose you're testing a `deleteWhenOlderThan` method. Your property test generates random persons and a random age threshold, calls the repository, and then you need to assert the right people were deleted. To do that, you filter the generated input list yourself:
 
-Typical properties tested with repositories and API clients are:
+```scala
+prop { (persons: List[Person], age: Int) =>
+  repo.insertMany(persons)
+  repo.deleteWhenOlderThan(age)
+  val remaining = repo.listAll()
 
-- *Data loss* - Does insert & update / read yield symmetric results?
-- *Locality* - Do update / delete / read specific things?
-- *Idempotent* - Are insert / update / delete methods idempotent?
+  // You're re-implementing the repository's filter logic right here in your test
+  remaining must_== persons.filter(_.age <= age)
+}
+```
 
-Testing these properties can assert that the interactions with datastores and API's is correct.
+This is fragile. Your assertion duplicates the exact filtering logic the repository is supposed to implement. If you get the assertion wrong (off-by-one, wrong comparison operator, edge case), the test is worthless — and you won't know it. You've encoded your expectations twice: once in the implementation, once in the test, and you're hoping they match.
 
-### Testing service code
+## The solution: make the expectations an executable model
 
-Service code, is code which uses these algebras to orchestrate a certain flow. Using real implementations can be useful in an E2E test, but to test if the service code is orchestating correctly can yield tremendous amounts of slow E2E test. To avoid that unit tests which either work with mocks or in-memory variants are favored.
+Instead of scattering filtering logic across assertions, **move it into a proper in-memory implementation** of the same algebra. This model is trivially simple — just list operations on a case class — so it's easy to get right. Then run the same operations against both the real implementation and the model, and compare results.
 
-The downside of mocks is that you give them certain input and _mock_ the output. What if this algebra would never return such an output with that input? Then your orchestration test is also _invalid_.
+This is the [test oracle](https://fsharpforfunandprofit.com/posts/property-based-testing-2/#test-oracle) pattern: you don't assert _what_ the result should be, you assert that two implementations _agree_.
 
-Due that reason I favor testing orchestrating logic with in-memory variants.
+The expectations now live in one place (the model), they're a real runnable implementation rather than ad-hoc assertions, and every property test is just: "does the real thing do the same as the model?"
 
-## How does it look like ?
+```
+  Generate random operations
+            │
+    ┌───────┴───────┐
+    ▼               ▼
+ ┌──────┐     ┌──────────┐
+ │ Real │     │ In-memory│
+ │ impl │     │  model   │
+ │(DB)  │     │ (Mirra)  │
+ └──┬───┘     └────┬─────┘
+    │              │
+    ▼              ▼
+  result₁ ═══ result₂ ?
+```
 
-Simple tagless final repository
+If they diverge, either the real implementation has a bug, or the model is wrong — both of which are valuable to discover.
+
+### Why this also helps your service tests
+
+Once you've proven the in-memory model is faithful to the real implementation, you can use that model as a drop-in replacement in your service-layer unit tests. No database, no containers, no network — just fast, deterministic tests that you _know_ are behaviorally accurate, because the model has been validated against the real thing.
+
+This is much better than mocks: a mock returns whatever you tell it to, even outputs the real implementation would never produce for a given input. A validated in-memory model can't lie that way.
+
+## How it works
+
+1. **Define** a tagless final algebra for your repository.
+2. **Implement** it for real — against a database, HTTP API, etc.
+3. **Model** it with `Mirra[S, *]`, a specialized `State` monad with built-in CRUD helpers (`insertMany`, `delete`, `all`, etc.) that operate over a simple in-memory state `S` using Monocle lenses.
+4. **Wire** both into a `Harness`, which uses `FunctorK` / `SemigroupalK` (from cats-tagless) to run the same program against both interpreters.
+5. **Assert mirroring** — for any randomly generated input, both must produce the same result.
+
+### What properties fall out of this?
+
+| Property | What it catches |
+|---|---|
+| **Data loss** | Insert → read doesn't return everything that was inserted |
+| **Locality** | A delete/update affects records it shouldn't (or misses ones it should) |
+| **Idempotency** | Applying an operation twice changes the result vs. applying it once |
+
+You don't need to encode these properties manually. They emerge naturally from mirroring: if the real implementation drops a record, reorders something, or over-deletes, the model will disagree.
+
+## Example
+
+### 1. Define the algebra
 
 ```scala
 final case class Person(id: UUID, name: String, age: Int)
@@ -36,57 +82,60 @@ final case class Person(id: UUID, name: String, age: Int)
 trait PersonRepository[F[_]] {
   def create: F[Unit]
   def insertMany(persons: List[Person]): F[Long]
-  def deleteWhenOlderThen(age: Long): F[Long]
+  def deleteWhenOlderThan(age: Long): F[Long]
   def listAll(): F[List[Person]]
 }
 
 object PersonRepository {
+  // These let the Harness run both interpreters through one algebra
   implicit val functorK: FunctorK[PersonRepository] = Derive.functorK
   implicit val semigroupalK: SemigroupalK[PersonRepository] = Derive.semigroupalK
 }
 ```
 
-An in-memory implementation using `Septic`, an specialized `State` monad:
+### 2. Write the in-memory model
+
+Define a "universe" — a case class holding your state — and implement the algebra using Mirra's CRUD helpers with Monocle lenses.
 
 ```scala
 @Lenses
-final case class Universe(
-  persons: List[Person]
-)
+final case class Universe(persons: List[Person])
 
 object Universe {
   def zero: Universe = Universe(Nil)
 }
 
-object SepticPersonRepository extends PersonRepository[Septic[Universe, *]] {
-  def insertMany(persons: List[Person]): Septic[Universe, Long] =
-    Septic.insertMany(Universe.persons)(persons)
+object InMemoryPersonRepository extends PersonRepository[Mirra[Universe, *]] {
+  def insertMany(persons: List[Person]): Mirra[Universe, Long] =
+    Mirra.insertMany(Universe.persons)(persons)
 
-  def deleteWhenOlderThen(age: Long): Septic[Universe, Long] =
-    Septic.delete(Universe.persons)(_.age > age)
+  def deleteWhenOlderThan(age: Long): Mirra[Universe, Long] =
+    Mirra.delete(Universe.persons)(_.age > age)
 
-  def listAll(): Septic[Universe, List[Person]] =
-    Septic.all(Universe.persons)
+  def listAll(): Mirra[Universe, List[Person]] =
+    Mirra.all(Universe.persons)
 
-  def create: Septic[Universe, Unit] =
-    Septic.unit
+  def create: Mirra[Universe, Unit] =
+    Mirra.unit
 }
 ```
 
-A doobie implementation
+This is your model — the single source of truth for expected behavior. It's so simple (append to a list, filter a list, return a list) that it's hard to get wrong.
+
+### 3. Write the real implementation
 
 ```scala
 object DoobiePersonRepository extends PersonRepository[ConnectionIO] {
 
   object queries {
-    def deleteWhenOlderThen(age: Long): Update0 =
+    def deleteWhenOlderThan(age: Long): Update0 =
       fr"delete from persons where age > $age".update
 
-    def create =
+    def create: Update0 =
       fr"""create table if not exists persons (
-        |	id uuid primary key,
-        |	name text not null,
-        |	age numeric not null
+        |  id uuid primary key,
+        |  name text not null,
+        |  age numeric not null
         |)""".stripMargin.update
 
     def listAll: Query0[Person] =
@@ -94,35 +143,34 @@ object DoobiePersonRepository extends PersonRepository[ConnectionIO] {
   }
 
   def insertMany(persons: List[Person]): ConnectionIO[Long] =
-    Update[Person]("insert into persons (id, name, age) values (?, ?, ?)").updateMany(persons).map(_.toLong)
+    Update[Person]("insert into persons (id, name, age) values (?, ?, ?)")
+      .updateMany(persons).map(_.toLong)
 
-  def deleteWhenOlderThen(age: Long): ConnectionIO[Long] =
-    queries.deleteWhenOlderThen(age).run.map(_.toLong)
+  def deleteWhenOlderThan(age: Long): ConnectionIO[Long] =
+    queries.deleteWhenOlderThan(age).run.map(_.toLong)
 
   def listAll(): ConnectionIO[List[Person]] =
     queries.listAll.to[List]
 
-  def create: doobie.ConnectionIO[Unit] =
+  def create: ConnectionIO[Unit] =
     queries.create.run.void
 }
 ```
 
-A simple spec, to verify that there is
-
-- No data loss
-- Deletes are specific to a certain age (locality)
+### 4. Mirror-test them
 
 ```scala
 class PersonRepoSpec extends Specification with DoobieSpec {
 
-  def harnass: Harnass[PersonRepository, IO, ConnectionIO, Universe] =
-    new Harnass(Universe.zero, DoobiePersonRepository, SepticPersonRepository, xa.trans)
+  def harness: Harness[PersonRepository, IO, ConnectionIO, Universe] =
+    new Harness(Universe.zero, DoobiePersonRepository, InMemoryPersonRepository, xa.trans)
 
   "PersonRepository" should {
-    "should insert and read" in {
+
+    "not lose data on insert → read" in {
       prop { persons: List[Person] =>
         assertMirroring {
-          harnass.model.eval { x =>
+          harness.model.eval { x =>
             x.create *>
               x.insertMany(persons) *>
               x.listAll()
@@ -131,13 +179,13 @@ class PersonRepoSpec extends Specification with DoobieSpec {
       }
     }
 
-    "should delete people older then" in {
+    "delete only people older than the threshold" in {
       prop { (persons: List[Person], age: Int) =>
         assertMirroring {
-          harnass.model.eval { x =>
+          harness.model.eval { x =>
             x.create *>
               x.insertMany(persons) *>
-              x.deleteWhenOlderThen(age) *>
+              x.deleteWhenOlderThan(age) *>
               x.listAll()
           }
         }
@@ -147,5 +195,30 @@ class PersonRepoSpec extends Specification with DoobieSpec {
 }
 ```
 
+Notice there's no assertion logic about _what_ the result should be. No filtering, no manual comparison. Just: "do both implementations agree?" ScalaCheck generates the inputs, the harness runs both, `assertMirroring` diffs the outputs.
 
+## Key concepts
 
+**`Mirra[S, A]`** — A `State`-like monad with built-in helpers for modeling CRUD operations (`insertMany`, `delete`, `all`, `unit`, etc.). Uses Monocle lenses to target collections within your state type `S`. This is where your expected behavior lives — in one place, as a real implementation, not scattered across test assertions.
+
+**`Harness[Alg, F, G, S]`** — Wires together a real implementation (`Alg[G]`) and a model (`Alg[Mirra[S, *]]`), using `FunctorK` / `SemigroupalK` to run both through the same algebra and compare results.
+
+**`assertMirroring`** — Executes the program against both interpreters, diffs the results, and fails the test if they diverge.
+
+**`FunctorK` / `SemigroupalK`** — Type classes from [cats-tagless](https://github.com/typelevel/cats-tagless) that allow transforming the effect type of an algebra. These are what make it possible to run a single program against two different interpreters. Derived automatically with `Derive.functorK` / `Derive.semigroupalK`.
+
+## Dependencies
+
+Built with Scala 2.13.
+
+**Core:** [cats-tagless](https://github.com/typelevel/cats-tagless) (FunctorK / SemigroupalK derivation), [Monocle](https://github.com/optics-dev/Monocle) (lenses for state manipulation).
+
+**Example module (test):** [Doobie](https://github.com/tpolecat/doobie), [Testcontainers](https://www.testcontainers.org/), [specs2](https://etorreborre.github.io/specs2/) + [ScalaCheck](https://scalacheck.org/), [magnolify-scalacheck](https://github.com/spotify/magnolify), [diffx](https://github.com/softwaremill/diffx).
+
+## Inspiration
+
+This library implements the [test oracle](https://fsharpforfunandprofit.com/posts/property-based-testing-2/#test-oracle) pattern described by Scott Wlaschin, applied to tagless final algebras: maintain a simplified model alongside the system under test, apply the same operations to both, and compare final states.
+
+## License
+
+This project is archived. Feel free to use it as a reference or fork it for your own needs.

@@ -1,4 +1,4 @@
-package septic
+package mirra
 
 import com.dimafeng.testcontainers.Container
 import org.specs2.specification.BeforeAfterAll

@@ -1,4 +1,4 @@
-package septic
+package mirra
 
 import cats.implicits._
 import cats.data.{State, Tuple2K}
@@ -6,9 +6,9 @@ import cats.tagless.SemigroupalK
 import cats.{Functor, ~>}
 
 
-class Harnass[Alg[_[_]], F[_], Tx[_], D](initState: D, db: Alg[Tx], model: Alg[Septic[D, *]], tx: Tx ~> F) {
+class Harnass[Alg[_[_]], F[_], Tx[_], D](initState: D, db: Alg[Tx], model: Alg[Mirra[D, *]], tx: Tx ~> F) {
 
-  type Eff[A] = Tuple2K[Tx, Septic[D, *], A]
+  type Eff[A] = Tuple2K[Tx, Mirra[D, *], A]
   type Paired = Alg[Eff]
 
   trait Evaluator {

@@ -1,4 +1,4 @@
-package septic
+package mirra
 
 import com.dimafeng.testcontainers.{Container, GenericContainer}
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy

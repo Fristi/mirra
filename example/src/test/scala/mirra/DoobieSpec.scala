@@ -1,4 +1,4 @@
-package septic
+package mirra
 
 import cats.implicits._
 import cats.effect.testing.specs2.CatsIO

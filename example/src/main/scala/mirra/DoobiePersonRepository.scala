@@ -1,4 +1,4 @@
-package septic
+package mirra
 
 import doobie._
 import doobie.implicits._
