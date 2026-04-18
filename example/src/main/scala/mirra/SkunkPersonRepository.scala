@@ -8,7 +8,7 @@ import skunk.codec.all.*
 import skunk.data.Completion
 import skunk.implicits.*
 
-class SkunkPersonRepository[F[_]: Async] extends PersonRepository[[A] =>> Kleisli[F, Session[F], A]] {
+class SkunkPersonRepository[F[_]: Async] extends PersonRepository[([A] =>> SkunkTransaction[F, A])] {
 
   private val personCodec: Codec[Person] =
     (uuid ~ text ~ int4).imap { case id ~ name ~ age => Person(id, name, age) }(p =>
@@ -33,21 +33,21 @@ class SkunkPersonRepository[F[_]: Async] extends PersonRepository[[A] =>> Kleisl
   private val deleteOlderThanCommand: Command[Long] =
     sql"DELETE FROM persons WHERE age > ${int8}".command
 
-  def create: Kleisli[F, Session[F], Unit] =
+  def create: SkunkTransaction[F, Unit] =
     Kleisli(_.execute(createCommand).void)
 
-  def insertMany(persons: List[Person]): Kleisli[F, Session[F], Long] = Kleisli { session =>
+  def insertMany(persons: List[Person]): SkunkTransaction[F, Long] = Kleisli { session =>
     session.prepareR(insertCommand).use(pc => persons.traverse(pc.execute).map(_.length.toLong))
   }
 
-  def deleteWhenOlderThen(age: Long): Kleisli[F, Session[F], Long] = Kleisli { session =>
+  def deleteWhenOlderThen(age: Long): SkunkTransaction[F, Long] = Kleisli { session =>
     session.prepareR(deleteOlderThanCommand).use(_.execute(age).map {
       case Completion.Delete(n) => n.toLong
       case _                   => 0L
     })
   }
 
-  def listAll(): Kleisli[F, Session[F], List[Person]] =
+  def listAll(): SkunkTransaction[F, List[Person]] =
     Kleisli(_.execute(listAllQuery))
 }
 
