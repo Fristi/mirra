@@ -1,0 +1,336 @@
+package mirra
+
+import cats.implicits.*
+import monocle.Lens
+import munit.FunSuite
+
+// ---- test domain ----
+
+case class Item(id: Int, name: String, value: Int)
+case class World(items: List[Item], tags: List[String])
+
+object World {
+  val items: Lens[World, List[Item]] = Lens[World, List[Item]](_.items)(v => _.copy(items = v))
+  val tags: Lens[World, List[String]]  = Lens[World, List[String]](_.tags)(v => _.copy(tags = v))
+  val empty: World = World(Nil, Nil)
+}
+
+// ---- spec ----
+
+class MirraSpec extends FunSuite with MirraSyntax {
+
+  // helpers
+  private def run[A](m: Mirra[World, A], state: World = World.empty): A = m.run(state)
+
+  private val a = Item(1, "a", 10)
+  private val b = Item(2, "b", 20)
+  private val c = Item(3, "c", 30)
+
+  // ------------------------------------------------------------------
+  // Core operators
+  // ------------------------------------------------------------------
+
+  test("unit returns unit and does not modify state") {
+    val result = run(Mirra.unit[World])
+    assertEquals(result, ())
+  }
+
+  test("succeed wraps a pure value without touching state") {
+    assertEquals(run(Mirra.succeed[World, Int](42)), 42)
+    assertEquals(run(Mirra.succeed[World, String]("hello")), "hello")
+  }
+
+  test("all returns the full collection from the lens") {
+    val state = World(List(a, b), Nil)
+    assertEquals(run(Mirra.all(World.items), state), List(a, b))
+  }
+
+  test("all returns empty list when collection is empty") {
+    assertEquals(run(Mirra.all(World.items)), List.empty[Item])
+  }
+
+  // ------------------------------------------------------------------
+  // insert / insertMany
+  // ------------------------------------------------------------------
+
+  test("insert adds one item and returns 1") {
+    assertEquals(run(Mirra.insert(World.items)(a)), 1L)
+  }
+
+  test("insertMany returns the count of inserted items") {
+    assertEquals(run(Mirra.insertMany(World.items)(List(a, b, c))), 3L)
+  }
+
+  test("insertMany returns 0 for empty list") {
+    assertEquals(run(Mirra.insertMany(World.items)(Nil)), 0L)
+  }
+
+  test("insertMany_ returns the inserted items") {
+    assertEquals(run(Mirra.insertMany_(World.items)(List(a, b))), List(a, b))
+  }
+
+  test("insertMany appends to existing items") {
+    val state = World(List(a), Nil)
+    val result = run(
+      for {
+        _ <- Mirra.insert(World.items)(b)
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result, List(a, b))
+  }
+
+  // ------------------------------------------------------------------
+  // update / update_
+  // ------------------------------------------------------------------
+
+  test("update modifies matching items and returns count") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.update(World.items)(_.value > 15, x => x.copy(value = 0)), state), 2L)
+  }
+
+  test("update returns 0 when nothing matches") {
+    val state = World(List(a, b), Nil)
+    assertEquals(run(Mirra.update(World.items)(_.id == 99, x => x.copy(name = "x")), state), 0L)
+  }
+
+  test("update_ returns the items before the update is applied") {
+    val state = World(List(a, b), Nil)
+    val result = run(Mirra.update_(World.items)(_.id == 1, _.copy(name = "updated")), state)
+    assertEquals(result, List(a))
+  }
+
+  test("update_ applies transformation to matching items in state") {
+    val state = World(List(a, b), Nil)
+    val result = run(
+      for {
+        _ <- Mirra.update_(World.items)(_.id == 1, _.copy(name = "updated"))
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result.find(_.id == 1).map(_.name), Some("updated"))
+  }
+
+  test("update does not touch non-matching items") {
+    val state = World(List(a, b, c), Nil)
+    val result = run(
+      for {
+        _ <- Mirra.update(World.items)(_.id == 1, _.copy(name = "changed"))
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result.find(_.id == 2), Some(b))
+    assertEquals(result.find(_.id == 3), Some(c))
+  }
+
+  // ------------------------------------------------------------------
+  // delete / delete_
+  // ------------------------------------------------------------------
+
+  test("delete removes matching items and returns count") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.delete(World.items)(_.value > 15), state), 2L)
+  }
+
+  test("delete returns 0 when nothing matches") {
+    val state = World(List(a, b), Nil)
+    assertEquals(run(Mirra.delete(World.items)(_.id == 99), state), 0L)
+  }
+
+  test("delete_ returns the deleted items") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.delete_(World.items)(_.value > 15), state), List(b, c))
+  }
+
+  test("delete removes items from state") {
+    val state = World(List(a, b, c), Nil)
+    val result = run(
+      for {
+        _ <- Mirra.delete(World.items)(_.value > 15)
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result, List(a))
+  }
+
+  // ------------------------------------------------------------------
+  // truncate
+  // ------------------------------------------------------------------
+
+  test("truncate clears all items and returns previous count") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.truncate(World.items), state), 3L)
+  }
+
+  test("truncate leaves state empty") {
+    val state = World(List(a, b), Nil)
+    val result = run(
+      for {
+        _ <- Mirra.truncate(World.items)
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result, List.empty[Item])
+  }
+
+  test("truncate on empty collection returns 0") {
+    assertEquals(run(Mirra.truncate(World.items)), 0L)
+  }
+
+  // ------------------------------------------------------------------
+  // upsert / upsertMany / upsertMany_
+  // ------------------------------------------------------------------
+
+  test("upsert inserts a new item when no conflict exists") {
+    assertEquals(run(Mirra.upsert(World.items)(_.id, identity, a)), 1L)
+  }
+
+  test("upsert updates an existing item on conflict") {
+    val updated = a.copy(name = "updated")
+    val state = World(List(a, b), Nil)
+    val result = run(
+      for {
+        _ <- Mirra.upsert(World.items)(_.id, _ => updated, a)
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result.find(_.id == 1).map(_.name), Some("updated"))
+  }
+
+  test("upsert does not duplicate on conflict") {
+    val state = World(List(a), Nil)
+    val result = run(
+      for {
+        _ <- Mirra.upsert(World.items)(_.id, identity, a)
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result.length, 1)
+  }
+
+  test("upsertMany inserts all new items") {
+    assertEquals(run(Mirra.upsertMany(World.items)(_.id, identity, List(a, b, c))), 3L)
+  }
+
+  test("upsertMany updates conflicts and inserts new") {
+    val state = World(List(a), Nil)
+    val updatedA = a.copy(name = "changed")
+    val result = run(
+      for {
+        _ <- Mirra.upsertMany(World.items)(_.id, x => if x.id == 1 then updatedA else x, List(a, b))
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result.length, 2)
+    assertEquals(result.find(_.id == 1).map(_.name), Some("changed"))
+    assertEquals(result.find(_.id == 2), Some(b))
+  }
+
+  test("upsertMany_ returns inserted and updated items") {
+    val state = World(List(a), Nil)
+    val result = run(Mirra.upsertMany_(World.items)(_.id, identity, List(a, b)), state)
+    // b is inserted, a is updated (same value via identity)
+    assertEquals(result.map(_.id).toSet, Set(1, 2))
+  }
+
+  // ------------------------------------------------------------------
+  // Monad laws / composition
+  // ------------------------------------------------------------------
+
+  test("flatMap sequences state transformations") {
+    val result = run(
+      for {
+        _ <- Mirra.insertMany(World.items)(List(a, b))
+        _ <- Mirra.delete(World.items)(_.id == 1)
+        xs <- Mirra.all(World.items)
+      } yield xs
+    )
+    assertEquals(result, List(b))
+  }
+
+  test("pure / succeed satisfies left identity") {
+    val f: Int => Mirra[World, Int] = n => Mirra.succeed(n * 2)
+    val left  = run(Mirra.succeed[World, Int](5).flatMap(f))
+    val right = run(f(5))
+    assertEquals(left, right)
+  }
+
+  // ------------------------------------------------------------------
+  // MirraSyntax
+  // ------------------------------------------------------------------
+
+  test("headOption returns Some for non-empty result") {
+    val state = World(List(a, b), Nil)
+    assertEquals(run(Mirra.all(World.items).headOption, state), Some(a))
+  }
+
+  test("headOption returns None for empty result") {
+    assertEquals(run(Mirra.all(World.items).headOption), None)
+  }
+
+  test("filter narrows the result collection") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.all(World.items).filter(_.value > 15), state), List(b, c))
+  }
+
+  test("select maps over the result collection") {
+    val state = World(List(a, b), Nil)
+    assertEquals(run(Mirra.all(World.items).select(_.name), state), List("a", "b"))
+  }
+
+  test("collect applies a partial function to the result collection") {
+    val state = World(List(a, b, c), Nil)
+    val result = run(
+      Mirra.all(World.items).collect { case i if i.value > 15 => i.name },
+      state
+    )
+    assertEquals(result, List("b", "c"))
+  }
+
+  test("size returns the count of elements") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.all(World.items).size, state), 3L)
+  }
+
+  test("reduced folds elements using their Monoid") {
+    val state = World.empty.copy(tags = List("x", "y", "z"))
+    assertEquals(run(Mirra.all(World.tags).reduced, state), "xyz")
+  }
+
+  test("leftJoin returns all left items with optional right match") {
+    val left  = World(List(a, b), Nil)
+    // tags hold strings matching item names
+    val state = left.copy(tags = List("a"))
+    val result = run(
+      Mirra.all(World.items).leftJoin(World.tags)((item, tag) => item.name == tag),
+      state
+    )
+    assertEquals(result, List((a, Some("a")), (b, None)))
+  }
+
+  test("rightJoin returns all right items with optional left match") {
+    val state = World(List(a), Nil).copy(tags = List("a", "z"))
+    val result = run(
+      Mirra.all(World.items).rightJoin(World.tags)((item, tag) => item.name == tag),
+      state
+    )
+    assertEquals(result, List((Some(a), "a"), (None, "z")))
+  }
+
+  test("innerJoin returns only matching pairs") {
+    val state = World(List(a, b), Nil).copy(tags = List("a", "z"))
+    val result = run(
+      Mirra.all(World.items).innerJoin(World.tags)((item, tag) => item.name == tag),
+      state
+    )
+    assertEquals(result, List((a, "a")))
+  }
+}

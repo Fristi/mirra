@@ -8,8 +8,8 @@ val core =
       libraryDependencies ++= Seq(
         "org.typelevel" %% "cats-tagless-core" % "0.16.5",
         "dev.optics" %% "monocle-core"  % "3.3.0",
+        "org.scalameta" %% "munit" % "1.3.0" % Test,
       ),
-
     )
 
 val doobie =
