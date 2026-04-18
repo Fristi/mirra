@@ -18,6 +18,8 @@ jobs:
           java-version: "21"
           cache: sbt
 
+      - uses: sbt/setup-sbt@v1
+
       - name: Run tests
         run: sbt "core/test; doobie/test; munit/test"
 
@@ -32,6 +34,8 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: sbt
+
+      - uses: sbt/setup-sbt@v1
 
       - name: Run example tests (requires Docker)
         run: sbt "example/test"
