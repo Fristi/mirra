@@ -10,6 +10,8 @@ import org.typelevel.otel4s.metrics.Meter
 import org.typelevel.otel4s.trace.Tracer
 import skunk.Session
 
+type SkunkTransaction[F[_], A] = Kleisli[F, Session[F], A]
+
 object SkunkSupport {
   def rollbackTrans[F[_]: {Async, Console, Network}](
     host: String,
@@ -17,7 +19,7 @@ object SkunkSupport {
     user: String,
     database: String,
     password: Option[String] = None
-  ): Resource[F, ([A] =>> Kleisli[F, Session[F], A]) ~> F] = {
+  ): Resource[F, ([A] =>> SkunkTransaction[F, A]) ~> F] = {
     given Tracer[F] = Tracer.noop
     given Meter[F] = Meter.noop
 
@@ -33,7 +35,7 @@ object SkunkSupport {
           { case (_, tx) => tx.rollback.void }
         )
         .map { case (session, _) =>
-          new (([A] =>> Kleisli[F, Session[F], A]) ~> F):
+          new (([A] =>> SkunkTransaction[F, A]) ~> F):
             def apply[A](fa: Kleisli[F, Session[F], A]): F[A] = fa.run(session)
         }
     }

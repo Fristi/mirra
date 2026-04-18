@@ -1,15 +1,18 @@
 package mirra
 
-import cats.effect.IO
+import cats.data.Kleisli
+import cats.effect.{IO, Resource}
 import cats.implicits.*
+import cats.~>
 import com.dimafeng.testcontainers.PostgreSQLContainer
 import com.dimafeng.testcontainers.munit.TestContainerForAll
 import munit.{CatsEffectSuite, ScalaCheckEffectSuite}
 import org.scalacheck.effect.PropF
 import org.scalacheck.{Arbitrary, Gen}
 import org.testcontainers.utility.DockerImageName
+import skunk.Session
 
-class SkunkPersonRepositorySpec extends CatsEffectSuite with ScalaCheckEffectSuite with MirraSuite[IO] with TestContainerForAll {
+class SkunkPersonRepositorySpec extends MirraSuite[IO, PersonRepository] with TestContainerForAll {
 
   given Arbitrary[Person] = Arbitrary {
     for {
@@ -26,26 +29,30 @@ class SkunkPersonRepositorySpec extends CatsEffectSuite with ScalaCheckEffectSui
     password = "scala"
   )
 
+  override type BootstrapContext = Containers
+  override type MirraState = Universe
+  override type TransactionEffect[A] = SkunkTransaction[IO, A]
+
+  override def bootstrapSystemUnderTest(c: BootstrapContext): Resource[IO, SUT] =
+    SkunkSupport.rollbackTrans[IO](
+      host     = c.container.getHost,
+      port     = c.container.getMappedPort(5432),
+      user     = c.username,
+      database = c.databaseName,
+      password = Some(c.password)
+    ).map { trans =>
+      new SystemUnderTest(Universe.zero, SkunkPersonRepository[IO], MirraPersonRepository, trans)
+    }
+
   test("should insert and read") {
     PropF.forAllF { (persons: List[Person]) =>
-      withContainers { (c: Containers) =>
-        SkunkSupport.rollbackTrans[IO](
-          host     = c.container.getHost,
-          port     = c.container.getMappedPort(5432),
-          user     = c.username,
-          database = c.databaseName,
-          password = Some(c.password)
-        ).use { trans =>
-          def algebraUnderTest =
-            new AlgebraUnderTest[PersonRepository, IO, [A] =>> cats.data.Kleisli[IO, skunk.Session[IO], A], Universe](Universe.zero, SkunkPersonRepository[IO], MirraPersonRepository, trans)
-
-          assertMirroring {
-            algebraUnderTest.model.eval { x =>
-              x.create *>
-                x.insertMany(persons) *>
-                x.listAll()
-            }
-          }
+      withContainers { container =>
+        assertMirroring(container) { x =>
+          for {
+            _ <- x.create
+            _ <- x.insertMany(persons)
+            r <- x.listAll()
+          } yield r
         }
       }
     }
@@ -53,25 +60,14 @@ class SkunkPersonRepositorySpec extends CatsEffectSuite with ScalaCheckEffectSui
 
   test("should delete people older then") {
     PropF.forAllF { (persons: List[Person], age: Int) =>
-      withContainers { (c: Containers) =>
-        SkunkSupport.rollbackTrans[IO](
-          host     = c.container.getHost,
-          port     = c.container.getMappedPort(5432),
-          user     = c.username,
-          database = c.databaseName,
-          password = Some(c.password)
-        ).use { trans =>
-          def algebraUnderTest =
-            new AlgebraUnderTest[PersonRepository, IO, [A] =>> cats.data.Kleisli[IO, skunk.Session[IO], A], Universe](Universe.zero, SkunkPersonRepository[IO], MirraPersonRepository, trans)
-
-          assertMirroring {
-            algebraUnderTest.model.eval { x =>
-              x.create *>
-                x.insertMany(persons) *>
-                x.deleteWhenOlderThen(age) *>
-                x.listAll()
-            }
-          }
+      withContainers { container =>
+        assertMirroring(container) { x =>
+          for {
+            _ <- x.create
+            _ <- x.insertMany(persons)
+            _ <- x.deleteWhenOlderThen(age)
+            r <- x.listAll()
+          } yield r
         }
       }
     }

@@ -1,14 +1,27 @@
 package mirra
 
-import cats.Functor
+import cats.{Functor, Monad}
+import cats.data.Tuple2K
+import cats.effect.Resource
+import cats.effect.kernel.MonadCancelThrow
 import cats.implicits.*
-import munit.{Compare, Location, ScalaCheckSuite}
+import cats.tagless.SemigroupalK
+import munit.{CatsEffectSuite, Compare, Location, ScalaCheckEffectSuite}
 
-trait MirraSuite[F[_] : Functor] extends ScalaCheckSuite {
+trait MirraSuite[OutsideWorldEffect[_] : MonadCancelThrow, Algebra[_[_]] : SemigroupalK] extends CatsEffectSuite with ScalaCheckEffectSuite {
 
-//  def harness[K[_[_]], Tx[_], D]: Harness[K, F, Tx, D]
+    type BootstrapContext
 
-  def assertMirroring[A](tuple: F[(A, A)])(implicit C: Compare[A, A], L: Location): F[Unit] =
-    tuple.map { case (left, right) => assertEquals(left, right) }
+    type MirraState
+    type MirraEffect[A] = Mirra[MirraState, A]
+    type TransactionEffect[_]
+    type PairedEffect[A] = Tuple2K[TransactionEffect, MirraEffect, A]
+
+    type SUT = SystemUnderTest[Algebra, OutsideWorldEffect, TransactionEffect, MirraState]
+
+    def bootstrapSystemUnderTest(context: BootstrapContext): Resource[OutsideWorldEffect, SUT]
+
+    def assertMirroring[A](c: BootstrapContext)(f: SUT#Paired => PairedEffect[A])(implicit C: Compare[A, A], L: Location): OutsideWorldEffect[Unit] =
+      bootstrapSystemUnderTest(c).use(_.eval(f).map { case (left, right) => assertEquals(left, right) })
 
 }

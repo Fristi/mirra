@@ -1,19 +1,16 @@
 package mirra
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import cats.implicits.*
 import com.dimafeng.testcontainers.PostgreSQLContainer
 import com.dimafeng.testcontainers.munit.TestContainerForAll
 import doobie.*
-import doobie.free.connection
 import doobie.implicits.*
-import doobie.util.transactor.Strategy
-import munit.{CatsEffectSuite, ScalaCheckEffectSuite}
 import org.scalacheck.effect.PropF
 import org.scalacheck.{Arbitrary, Gen}
 import org.testcontainers.utility.DockerImageName
 
-class DoobiePersonRepositorySpec extends CatsEffectSuite with ScalaCheckEffectSuite with MirraSuite[IO] with TestContainerForAll {
+class DoobiePersonRepositorySpec extends MirraSuite[IO, PersonRepository] with TestContainerForAll {
 
   given Arbitrary[Person] = Arbitrary {
     for {
@@ -30,43 +27,37 @@ class DoobiePersonRepositorySpec extends CatsEffectSuite with ScalaCheckEffectSu
     password = "scala"
   )
 
+  override type BootstrapContext = Containers
+  override type MirraState = Universe
+  override type TransactionEffect = ConnectionIO
+
+  override def bootstrapSystemUnderTest(c: BootstrapContext): Resource[IO, SUT] =
+    Resource.pure(new SystemUnderTest(Universe.zero, DoobiePersonRepository, MirraPersonRepository, DoobieSupport.rollbackTrans[IO]("org.postgresql.Driver", c.jdbcUrl, c.username, c.password)))
+
   test("should insert and read") {
-
       PropF.forAllF { (persons: List[Person]) =>
-        withContainers { (c: Containers) =>
-
-        val trans = DoobieSupport.rollbackTrans[IO]("org.postgresql.Driver", c.jdbcUrl, c.username, c.password)
-
-        def algebraUnderTest =
-          new AlgebraUnderTest(Universe.zero, DoobiePersonRepository, MirraPersonRepository, trans)
-
-        assertMirroring {
-          algebraUnderTest.model.eval { x =>
-            x.create *>
-              x.insertMany(persons) *>
-              x.listAll()
+        withContainers { container =>
+          assertMirroring(container) { x =>
+            for {
+              _ <- x.create
+              _ <- x.insertMany(persons)
+              r <- x.listAll()
+            } yield r
           }
         }
       }
-    }
   }
 
   test("should delete people older then") {
     PropF.forAllF { (persons: List[Person], age: Int) =>
-      withContainers { (c: Containers) =>
-
-        val trans = DoobieSupport.rollbackTrans[IO]("org.postgresql.Driver", c.jdbcUrl, c.username, c.password)
-
-        def algebraUnderTest =
-          new AlgebraUnderTest(Universe.zero, DoobiePersonRepository, MirraPersonRepository, trans)
-
-        assertMirroring {
-          algebraUnderTest.model.eval { x =>
-            x.create *>
-              x.insertMany(persons) *>
-              x.deleteWhenOlderThen(age) *>
-              x.listAll()
-          }
+      withContainers { container =>
+        assertMirroring(container) { x =>
+          for {
+            _ <- x.create
+            _ <- x.insertMany(persons)
+            _ <- x.deleteWhenOlderThen(age)
+            r <- x.listAll()
+          } yield r
         }
       }
     }
