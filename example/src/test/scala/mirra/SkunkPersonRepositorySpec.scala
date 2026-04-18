@@ -33,7 +33,7 @@ class SkunkPersonRepositorySpec extends MirraSuite[IO, PersonRepository] with Te
   override type MirraState = Universe
   override type TransactionEffect[A] = SkunkTransaction[IO, A]
 
-  override def bootstrapSystemUnderTest(c: BootstrapContext): Resource[IO, SUT] =
+  override def bootstrapSystemUnderTest(c: BootstrapContext): Resource[IO, SystemUnderTest] =
     SkunkSupport.rollbackTrans[IO](
       host     = c.container.getHost,
       port     = c.container.getMappedPort(5432),

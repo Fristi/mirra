@@ -31,7 +31,7 @@ class DoobiePersonRepositorySpec extends MirraSuite[IO, PersonRepository] with T
   override type MirraState = Universe
   override type TransactionEffect = ConnectionIO
 
-  override def bootstrapSystemUnderTest(c: BootstrapContext): Resource[IO, SUT] =
+  override def bootstrapSystemUnderTest(c: BootstrapContext): Resource[IO, SystemUnderTest] =
     Resource.pure(new SystemUnderTest(Universe.zero, DoobiePersonRepository, MirraPersonRepository, DoobieSupport.rollbackTrans[IO]("org.postgresql.Driver", c.jdbcUrl, c.username, c.password)))
 
   test("should insert and read") {
