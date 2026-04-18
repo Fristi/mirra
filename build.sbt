@@ -34,6 +34,16 @@ val munit =
     )
     .dependsOn(core)
 
+val skunk =
+  project.in(file("skunk"))
+    .settings(commonSettings)
+    .settings(
+      libraryDependencies ++= Seq(
+        "org.tpolecat" %% "skunk-core" % "1.0.0"
+      )
+    )
+    .dependsOn(core)
+
 def commonSettings = Seq(
   scalaVersion := "3.8.3",
   scalacOptions += "-experimental"
@@ -53,4 +63,4 @@ val example =
         "com.dimafeng" %% "testcontainers-scala-munit" % "0.44.1"
       )
     )
-    .dependsOn(core, munit, doobie)
+    .dependsOn(core, munit, doobie, skunk)
