@@ -16,7 +16,7 @@ prop { (persons: List[Person], age: Int) =>
   repo.deleteWhenOlderThen(age)
   val remaining = repo.listAll()
 
-  // You're re-implementing the repository's filter logic right here in your test
+  // Re-implementing the repository's filter logic right here in the test
   remaining must_== persons.filter(_.age <= age)
 }
 ```
@@ -59,7 +59,7 @@ This is much better than mocks: a mock returns whatever you tell it to, even out
 1. **Define** a tagless final algebra for your repository.
 2. **Implement** it for real — against a database, HTTP API, etc.
 3. **Model** it with `Mirra[S, *]`, a specialized `State` monad with built-in CRUD helpers (`insertMany`, `delete`, `all`, etc.) that operate over a simple in-memory state `S` using Monocle lenses.
-4. **Wire** both into an `AlgebraUnderTest`, which uses `FunctorK` / `SemigroupalK` (from cats-tagless) to run the same program against both interpreters.
+4. **Wire** both into a `SystemUnderTest`, which uses `SemigroupalK` (from cats-tagless) to run the same program against both interpreters simultaneously.
 5. **Assert mirroring** — for any randomly generated input, both must produce the same result.
 
 ### What properties fall out of this?
@@ -90,7 +90,7 @@ trait PersonRepository[F[_]] {
 }
 
 object PersonRepository {
-  // These let AlgebraUnderTest run both interpreters through one algebra
+  // These let SystemUnderTest run both interpreters through one algebra
   implicit val functorK: FunctorK[PersonRepository] = Derive.functorK
   implicit val semigroupalK: SemigroupalK[PersonRepository] = Derive.semigroupalK
 }
@@ -139,34 +139,22 @@ import doobie._
 import doobie.implicits._
 
 object DoobiePersonRepository extends PersonRepository[ConnectionIO] {
-
-  object queries {
-    def create =
-      fr"""create table if not exists persons (
-        |  id uuid primary key,
-        |  name varchar(50) not null,
-        |  age numeric not null
-        |)""".stripMargin.update
-
-    def deleteWhenOlderThen(age: Long): Update0 =
-      fr"delete from persons where age > $age".update
-
-    def listAll: Query0[Person] =
-      fr"select id, name, age from persons".query[Person]
-  }
-
   def create: ConnectionIO[Unit] =
-    queries.create.run.void
+    fr"""create table if not exists persons (
+      |  id uuid primary key,
+      |  name varchar(50) not null,
+      |  age numeric not null
+      |)""".stripMargin.update.run.void
 
   def insertMany(persons: List[Person]): ConnectionIO[Long] =
     Update[Person]("insert into persons (id, name, age) values (?, ?, ?)")
       .updateMany(persons).map(_.toLong)
 
   def deleteWhenOlderThen(age: Long): ConnectionIO[Long] =
-    queries.deleteWhenOlderThen(age).run.map(_.toLong)
+    fr"delete from persons where age > $age".update.run.map(_.toLong)
 
   def listAll(): ConnectionIO[List[Person]] =
-    queries.listAll.to[List]
+    fr"select id, name, age from persons".query[Person].to[List]
 }
 ```
 
@@ -177,92 +165,109 @@ The effect type is `Kleisli[F, Session[F], *]` — a function from a live Skunk 
 ```scala
 import cats.data.Kleisli
 import cats.effect.Async
-import cats.implicits.*
-import skunk.*
-import skunk.codec.all.*
-import skunk.data.Completion
-import skunk.implicits.*
+import skunk._
+import skunk.codec.all._
+import skunk.implicits._
 
 class SkunkPersonRepository[F[_]: Async] extends PersonRepository[[A] =>> Kleisli[F, Session[F], A]] {
-
   private val personCodec: Codec[Person] =
     (uuid ~ text ~ int4).imap { case id ~ name ~ age => Person(id, name, age) }(p =>
-      p.id ~ p.name ~ p.age
-    )
-
-  private val createCommand: Command[Void] =
-    sql"""
-      CREATE TABLE IF NOT EXISTS persons (
-        id uuid PRIMARY KEY,
-        name text NOT NULL,
-        age int4 NOT NULL
-      )
-    """.command
-
-  private val insertCommand: Command[Person] =
-    sql"INSERT INTO persons (id, name, age) VALUES ($personCodec)".command
-
-  private val listAllQuery: Query[Void, Person] =
-    sql"SELECT id, name, age FROM persons".query(personCodec)
-
-  private val deleteOlderThanCommand: Command[Long] =
-    sql"DELETE FROM persons WHERE age > ${int8}".command
+      p.id ~ p.name ~ p.age)
 
   def create: Kleisli[F, Session[F], Unit] =
-    Kleisli(_.execute(createCommand).void)
+    Kleisli(_.execute(sql"CREATE TABLE IF NOT EXISTS persons (id uuid PRIMARY KEY, name text NOT NULL, age int4 NOT NULL)".command).void)
 
   def insertMany(persons: List[Person]): Kleisli[F, Session[F], Long] = Kleisli { session =>
-    session.prepareR(insertCommand).use(pc => persons.traverse(pc.execute).map(_.length.toLong))
+    session.prepareR(sql"INSERT INTO persons (id, name, age) VALUES ($personCodec)".command)
+      .use(pc => persons.traverse(pc.execute).map(_.length.toLong))
   }
 
   def deleteWhenOlderThen(age: Long): Kleisli[F, Session[F], Long] = Kleisli { session =>
-    session.prepareR(deleteOlderThanCommand).use(_.execute(age).map {
-      case Completion.Delete(n) => n.toLong
-      case _                   => 0L
-    })
+    session.prepareR(sql"DELETE FROM persons WHERE age > ${int8}".command)
+      .use(_.execute(age).map { case Completion.Delete(n) => n.toLong; case _ => 0L })
   }
 
   def listAll(): Kleisli[F, Session[F], List[Person]] =
-    Kleisli(_.execute(listAllQuery))
+    Kleisli(_.execute(sql"SELECT id, name, age FROM persons".query(personCodec)))
 }
 ```
 
 ### 4. Mirror-test them
 
-#### Doobie
+All three test framework integrations follow the same structure:
 
-`DoobieSupport.rollbackTrans` returns a `ConnectionIO ~> F` natural transformation that runs each test inside a transaction and always rolls back, leaving the database clean between property iterations.
+- Assign three abstract types: `BootstrapContext` (e.g. a running container), `MirraState` (the in-memory universe), and `TransactionEffect` (the real DB effect).
+- Implement `bootstrapSystemUnderTest` to wire together both interpreters and a rollback transactor.
+- Call `assertMirroring(context) { x => … }` in each test. `x` is your algebra running against both interpreters simultaneously; no manual assertion of specific values needed.
+
+Each property iteration runs inside a transaction that is always rolled back, so the database stays clean without restarting the container.
+
+#### munit + cats-effect
 
 ```scala
+import cats.effect.IO
+import cats.implicits.*
+import com.dimafeng.testcontainers.PostgreSQLContainer
+import com.dimafeng.testcontainers.munit.TestContainerForAll
+import doobie.*
+import org.scalacheck.effect.PropF
+import org.scalacheck.{Arbitrary, Gen}
+
 class DoobiePersonRepositorySpec
-    extends CatsEffectSuite
-    with ScalaCheckEffectSuite
-    with MirraSuite[IO]
+    extends MirraSuite[IO, PersonRepository]
     with TestContainerForAll {
 
-  given Arbitrary[Person] = Arbitrary { /* ... */ }
+  given Arbitrary[Person] = Arbitrary {
+    for {
+      id   <- Gen.uuid
+      name <- Gen.stringOfN(50, Gen.alphaChar)
+      age  <- Gen.posNum[Int]
+    } yield Person(id, name, age)
+  }
 
-  override val containerDef: PostgreSQLContainer.Def = PostgreSQLContainer.Def(
+  override val containerDef = PostgreSQLContainer.Def(
     dockerImageName = DockerImageName.parse("postgres:15.1"),
     databaseName    = "testcontainer-scala",
     username        = "scala",
     password        = "scala"
   )
 
+  override type BootstrapContext     = Containers
+  override type MirraState           = Universe
+  override type TransactionEffect[A] = ConnectionIO[A]
+
+  override def bootstrapSystemUnderTest(c: Containers): Resource[IO, SystemUnderTest] =
+    Resource.pure(new SystemUnderTest(
+      Universe.zero,
+      DoobiePersonRepository,
+      MirraPersonRepository,
+      DoobieSupport.rollbackTrans[IO]("org.postgresql.Driver", c.jdbcUrl, c.username, c.password)
+    ))
+
   test("should insert and read") {
     PropF.forAllF { (persons: List[Person]) =>
-      withContainers { (c: Containers) =>
-        val trans = DoobieSupport.rollbackTrans[IO](
-          "org.postgresql.Driver", c.jdbcUrl, c.username, c.password
-        )
+      withContainers { container =>
+        assertMirroring(container) { x =>
+          for {
+            _ <- x.create
+            _ <- x.insertMany(persons)
+            r <- x.listAll()
+          } yield r
+        }
+      }
+    }
+  }
 
-        def algebraUnderTest =
-          new AlgebraUnderTest(Universe.zero, DoobiePersonRepository, MirraPersonRepository, trans)
-
-        assertMirroring {
-          algebraUnderTest.model.eval { x =>
-            x.create *> x.insertMany(persons) *> x.listAll()
-          }
+  test("should delete people older than") {
+    PropF.forAllF { (persons: List[Person], age: Int) =>
+      withContainers { container =>
+        assertMirroring(container) { x =>
+          for {
+            _ <- x.create
+            _ <- x.insertMany(persons)
+            _ <- x.deleteWhenOlderThen(age)
+            r <- x.listAll()
+          } yield r
         }
       }
     }
@@ -270,59 +275,104 @@ class DoobiePersonRepositorySpec
 }
 ```
 
-#### Skunk
+#### ZIO Test
 
-`SkunkSupport.rollbackTrans` does the same for Skunk: opens a session, begins a transaction, and always rolls back. It returns a `Kleisli[F, Session[F], *] ~> F` nat-trans directly, so the test body is identical in structure. Noop otel4s tracing is wired internally — no setup required.
+The ZIO Test integration fixes the effect type to `Task` (`ZIO[Any, Throwable, *]`). Bridging to Cats Effect (so that Doobie's `Transactor` works with `Task`) is done via `zio-interop-cats`. The container is managed with `ZLayer.scoped` + `provideShared` so it starts once per suite.
 
 ```scala
-class SkunkPersonRepositorySpec
-    extends CatsEffectSuite
-    with ScalaCheckEffectSuite
-    with MirraSuite[IO]
-    with TestContainerForAll {
+import cats.implicits.*
+import com.dimafeng.testcontainers.PostgreSQLContainer
+import doobie.*
+import org.testcontainers.utility.DockerImageName
+import zio.*
+import zio.interop.catz.*
+import zio.test.*
 
-  given Arbitrary[Person] = Arbitrary { /* ... */ }
+object ZioDoobiePersonRepositorySpec extends MirraZIOSuite[PersonRepository] {
 
-  override val containerDef: PostgreSQLContainer.Def = /* same as Doobie */
+  override type BootstrapContext     = PostgreSQLContainer
+  override type MirraState           = Universe
+  override type TransactionEffect[A] = ConnectionIO[A]
 
-  test("should insert and read") {
-    PropF.forAllF { (persons: List[Person]) =>
-      withContainers { (c: Containers) =>
-        SkunkSupport.rollbackTrans[IO](
-          host     = c.container.getHost,
-          port     = c.container.getMappedPort(5432),
-          user     = c.username,
-          database = c.databaseName,
-          password = Some(c.password)
-        ).use { trans =>
-          def algebraUnderTest =
-            new AlgebraUnderTest[PersonRepository, IO, [A] =>> Kleisli[IO, Session[IO], A], Universe](
-              Universe.zero, SkunkPersonRepository[IO], MirraPersonRepository, trans
-            )
+  private val genPerson: Gen[Any, Person] =
+    for {
+      id   <- Gen.uuid
+      name <- Gen.stringBounded(1, 50)(Gen.alphaNumericChar)
+      age  <- Gen.int(1, 120)
+    } yield Person(id, name, age)
 
-          assertMirroring {
-            algebraUnderTest.model.eval { x =>
-              x.create *> x.insertMany(persons) *> x.listAll()
+  private val containerLayer: ZLayer[Any, Throwable, PostgreSQLContainer] =
+    ZLayer.scoped {
+      ZIO.acquireRelease(
+        ZIO.attemptBlocking {
+          val c = PostgreSQLContainer(
+            dockerImageNameOverride = DockerImageName.parse("postgres:15.1"),
+            databaseName            = "testcontainer-scala",
+            username                = "scala",
+            password                = "scala"
+          )
+          c.start(); c
+        }
+      )(c => ZIO.attemptBlocking(c.stop()).orDie)
+    }
+
+  override def bootstrapSystemUnderTest(c: PostgreSQLContainer): ZIO[Scope, Throwable, SystemUnderTest] =
+    ZIO.attempt(new SystemUnderTest(
+      Universe.zero,
+      DoobiePersonRepository,
+      MirraPersonRepository,
+      DoobieSupport.rollbackTrans[Task]("org.postgresql.Driver", c.jdbcUrl, c.username, c.password)
+    ))
+
+  def spec =
+    suite("ZioDoobiePersonRepositorySpec")(
+
+      test("should insert and read") {
+        ZIO.serviceWithZIO[PostgreSQLContainer] { container =>
+          check(Gen.listOf(genPerson)) { persons =>
+            assertMirroring(container) { x =>
+              for {
+                _ <- x.create
+                _ <- x.insertMany(persons)
+                r <- x.listAll()
+              } yield r
+            }
+          }
+        }
+      },
+
+      test("should delete people older than") {
+        ZIO.serviceWithZIO[PostgreSQLContainer] { container =>
+          check(Gen.listOf(genPerson).zip(Gen.int(0, 200))) { case (persons, age) =>
+            assertMirroring(container) { x =>
+              for {
+                _ <- x.create
+                _ <- x.insertMany(persons)
+                _ <- x.deleteWhenOlderThen(age)
+                r <- x.listAll()
+              } yield r
             }
           }
         }
       }
-    }
-  }
+
+    ).provideShared(containerLayer)
 }
 ```
 
-Notice there's no assertion logic about _what_ the result should be. No filtering, no manual comparison. Just: "do both implementations agree?" ScalaCheck generates the inputs, the harness runs both, `assertMirroring` diffs the outputs.
+Notice there is no assertion logic about _what_ the result should be. No filtering, no manual comparison. Just: "do both implementations agree?" The framework generates the inputs, runs both interpreters, and `assertMirroring` diffs the outputs.
 
 ## Key concepts
 
 **`Mirra[S, A]`** — A `State`-like monad with built-in helpers for modeling CRUD operations (`insertMany`, `delete`, `all`, `unit`, etc.). Uses Monocle lenses to target collections within your state type `S`. This is where your expected behavior lives — in one place, as a real implementation, not scattered across test assertions.
 
-**`AlgebraUnderTest[Alg, F, Tx, S]`** — Wires together a real implementation (`Alg[Tx]`) and a model (`Alg[Mirra[S, *]]`), using `FunctorK` / `SemigroupalK` to run both through the same algebra and compare results. `Tx ~> F` is a natural transformation (e.g. a Doobie transactor) that interprets the real effect into `F`.
+**`SystemUnderTest`** — Wires together a real implementation and a model using `SemigroupalK` to run both through the same algebra simultaneously. Accepts a natural transformation `TransactionEffect ~> F` (or `~> Task` for ZIO) that interprets real database actions.
 
 **`assertMirroring`** — Executes the program against both interpreters, diffs the results, and fails the test if they diverge.
 
-**`MirraSuite[F[_]]`** — A munit trait providing `assertMirroring`. Mix it into your test suite alongside `CatsEffectSuite` and `ScalaCheckEffectSuite`.
+**`MirraSuite[F[_], Alg[_[_]]]`** — A munit trait providing `assertMirroring`. Extends `CatsEffectSuite` and `ScalaCheckEffectSuite`; mix it into your test suite and implement `bootstrapSystemUnderTest`.
+
+**`MirraZIOSuite[Alg[_[_]]]`** — A ZIO Test equivalent of `MirraSuite`. Extends `ZIOSpecDefault`; the effect type is fixed to `Task`. Property inputs come from ZIO Test's built-in `Gen`; resource management uses `ZLayer` + `provideShared`.
 
 **`FunctorK` / `SemigroupalK`** — Type classes from [cats-tagless](https://github.com/typelevel/cats-tagless) that allow transforming the effect type of an algebra. These are what make it possible to run a single program against two different interpreters. Derived automatically with `Derive.functorK` / `Derive.semigroupalK`.
 
@@ -330,8 +380,9 @@ Notice there's no assertion logic about _what_ the result should be. No filterin
 
 | Module | What it provides |
 |---|---|
-| `core` | `Mirra[S, A]`, `AlgebraUnderTest`, `MirraSyntax` |
-| `munit` | `MirraSuite[F]` — mix into munit suites |
+| `core` | `Mirra[S, A]`, `MirraSyntax` |
+| `munit` | `MirraSuite[F, Alg]` — munit + cats-effect + ScalaCheck integration |
+| `zio-test` | `MirraZIOSuite[Alg]` — ZIO Test integration (effect fixed to `Task`) |
 | `doobie` | `DoobieSupport.rollbackTrans` — `ConnectionIO ~> F` with always-rollback |
 | `skunk` | `SkunkSupport.rollbackTrans` — `Kleisli[F, Session[F], *] ~> F` with always-rollback |
 
@@ -343,11 +394,13 @@ Built with Scala 3.
 
 **munit module:** [munit](https://scalameta.org/munit/), [munit-cats-effect](https://github.com/typelevel/munit-cats-effect), [scalacheck-effect-munit](https://github.com/typelevel/scalacheck-effect).
 
+**zio-test module:** [ZIO](https://zio.dev/) (`zio`, `zio-test`, `zio-test-sbt`).
+
 **doobie module:** [Doobie](https://github.com/tpolecat/doobie).
 
-**skunk module:** [Skunk](https://github.com/tpolecat/skunk) 1.0.0.
+**skunk module:** [Skunk](https://github.com/tpolecat/skunk).
 
-**Example module:** Doobie + Skunk, [Testcontainers](https://www.testcontainers.org/) (PostgreSQL), [ScalaCheck](https://scalacheck.org/).
+**Example module:** Doobie + Skunk + ZIO, [zio-interop-cats](https://github.com/zio/interop-cats) (bridges `Task` to Cats Effect `Async`), [Testcontainers](https://www.testcontainers.org/) (PostgreSQL).
 
 ## Inspiration
 

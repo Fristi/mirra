@@ -34,6 +34,18 @@ val munit =
     )
     .dependsOn(core)
 
+val zioTest =
+  project.in(file("zio-test"))
+    .settings(commonSettings)
+    .settings(
+      libraryDependencies ++= Seq(
+        "dev.zio" %% "zio"          % "2.1.14",
+        "dev.zio" %% "zio-test"     % "2.1.14",
+        "dev.zio" %% "zio-test-sbt" % "2.1.14",
+      )
+    )
+    .dependsOn(core)
+
 val skunk =
   project.in(file("skunk"))
     .settings(commonSettings)
@@ -55,12 +67,18 @@ val example =
     .settings(commonSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "org.tpolecat"      %% "doobie-core"            % "1.0.0-RC12",
-        "org.tpolecat"      %% "doobie-postgres"        % "1.0.0-RC12",
-        "org.tpolecat"      %% "doobie-hikari"          % "1.0.0-RC12",
-        "dev.optics" %% "monocle-macro" % "3.3.0",
-        "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.44.1",
-        "com.dimafeng" %% "testcontainers-scala-munit" % "0.44.1"
-      )
+        "org.tpolecat"  %% "doobie-core"                          % "1.0.0-RC12",
+        "org.tpolecat"  %% "doobie-postgres"                      % "1.0.0-RC12",
+        "org.tpolecat"  %% "doobie-hikari"                        % "1.0.0-RC12",
+        "dev.optics"    %% "monocle-macro"                        % "3.3.0",
+        "com.dimafeng"  %% "testcontainers-scala-postgresql"      % "0.44.1",
+        "com.dimafeng"  %% "testcontainers-scala-munit"           % "0.44.1",
+        // ZIO Test integration
+        "dev.zio"       %% "zio"                                  % "2.1.14"   % Test,
+        "dev.zio"       %% "zio-test"                             % "2.1.14"   % Test,
+        "dev.zio"       %% "zio-test-sbt"                         % "2.1.14"   % Test,
+        "dev.zio"       %% "zio-interop-cats"                     % "23.1.0.3" % Test,
+      ),
+      testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
     )
-    .dependsOn(core, munit, doobie, skunk)
+    .dependsOn(core, munit, doobie, skunk, zioTest)
