@@ -8,12 +8,12 @@ Mirra verifies that a real repository implementation behaves the same way as a s
 
 ## The problem: duplicated expectations
 
-When you property-test a repository directly, you end up re-implementing its logic in your assertions. Suppose you're testing a `deleteWhenOlderThan` method. Your property test generates random persons and a random age threshold, calls the repository, and then you need to assert the right people were deleted. To do that, you filter the generated input list yourself:
+When you property-test a repository directly, you end up re-implementing its logic in your assertions. Suppose you're testing a `deleteWhenOlderThen` method. Your property test generates random persons and a random age threshold, calls the repository, and then you need to assert the right people were deleted. To do that, you filter the generated input list yourself:
 
 ```scala
 prop { (persons: List[Person], age: Int) =>
   repo.insertMany(persons)
-  repo.deleteWhenOlderThan(age)
+  repo.deleteWhenOlderThen(age)
   val remaining = repo.listAll()
 
   // You're re-implementing the repository's filter logic right here in your test
@@ -32,7 +32,7 @@ This is the [test oracle](https://fsharpforfunandprofit.com/posts/property-based
 The expectations now live in one place (the model), they're a real runnable implementation rather than ad-hoc assertions, and every property test is just: "does the real thing do the same as the model?"
 
 ```
-  Generate random operations
+  Generate random data
             │
     ┌───────┴───────┐
     ▼               ▼
@@ -59,7 +59,7 @@ This is much better than mocks: a mock returns whatever you tell it to, even out
 1. **Define** a tagless final algebra for your repository.
 2. **Implement** it for real — against a database, HTTP API, etc.
 3. **Model** it with `Mirra[S, *]`, a specialized `State` monad with built-in CRUD helpers (`insertMany`, `delete`, `all`, etc.) that operate over a simple in-memory state `S` using Monocle lenses.
-4. **Wire** both into a `Harness`, which uses `FunctorK` / `SemigroupalK` (from cats-tagless) to run the same program against both interpreters.
+4. **Wire** both into an `AlgebraUnderTest`, which uses `FunctorK` / `SemigroupalK` (from cats-tagless) to run the same program against both interpreters.
 5. **Assert mirroring** — for any randomly generated input, both must produce the same result.
 
 ### What properties fall out of this?
@@ -77,17 +77,20 @@ You don't need to encode these properties manually. They emerge naturally from m
 ### 1. Define the algebra
 
 ```scala
+import cats.tagless.{Derive, FunctorK, SemigroupalK}
+import java.util.UUID
+
 final case class Person(id: UUID, name: String, age: Int)
 
 trait PersonRepository[F[_]] {
   def create: F[Unit]
   def insertMany(persons: List[Person]): F[Long]
-  def deleteWhenOlderThan(age: Long): F[Long]
+  def deleteWhenOlderThen(age: Long): F[Long]
   def listAll(): F[List[Person]]
 }
 
 object PersonRepository {
-  // These let the Harness run both interpreters through one algebra
+  // These let AlgebraUnderTest run both interpreters through one algebra
   implicit val functorK: FunctorK[PersonRepository] = Derive.functorK
   implicit val semigroupalK: SemigroupalK[PersonRepository] = Derive.semigroupalK
 }
@@ -95,28 +98,29 @@ object PersonRepository {
 
 ### 2. Write the in-memory model
 
-Define a "universe" — a case class holding your state — and implement the algebra using Mirra's CRUD helpers with Monocle lenses.
+Define a "universe" — a case class holding your state — and implement the algebra using Mirra's CRUD helpers with Monocle `Focus` lenses.
 
 ```scala
-@Lenses
+import monocle.Focus
+
 final case class Universe(persons: List[Person])
 
 object Universe {
   def zero: Universe = Universe(Nil)
 }
 
-object InMemoryPersonRepository extends PersonRepository[Mirra[Universe, *]] {
-  def insertMany(persons: List[Person]): Mirra[Universe, Long] =
-    Mirra.insertMany(Universe.persons)(persons)
-
-  def deleteWhenOlderThan(age: Long): Mirra[Universe, Long] =
-    Mirra.delete(Universe.persons)(_.age > age)
-
-  def listAll(): Mirra[Universe, List[Person]] =
-    Mirra.all(Universe.persons)
-
+object MirraPersonRepository extends PersonRepository[[A] =>> Mirra[Universe, A]] {
   def create: Mirra[Universe, Unit] =
     Mirra.unit
+
+  def insertMany(persons: List[Person]): Mirra[Universe, Long] =
+    Mirra.insertMany(Focus[Universe](_.persons))(persons)
+
+  def deleteWhenOlderThen(age: Long): Mirra[Universe, Long] =
+    Mirra.delete(Focus[Universe](_.persons))(_.age > age)
+
+  def listAll(): Mirra[Universe, List[Person]] =
+    Mirra.all(Focus[Universe](_.persons))
 }
 ```
 
@@ -125,52 +129,85 @@ This is your model — the single source of truth for expected behavior. It's so
 ### 3. Write the real implementation
 
 ```scala
+import doobie._
+import doobie.implicits._
+
 object DoobiePersonRepository extends PersonRepository[ConnectionIO] {
 
   object queries {
-    def deleteWhenOlderThan(age: Long): Update0 =
-      fr"delete from persons where age > $age".update
-
-    def create: Update0 =
+    def create =
       fr"""create table if not exists persons (
         |  id uuid primary key,
-        |  name text not null,
+        |  name varchar(50) not null,
         |  age numeric not null
         |)""".stripMargin.update
+
+    def deleteWhenOlderThen(age: Long): Update0 =
+      fr"delete from persons where age > $age".update
 
     def listAll: Query0[Person] =
       fr"select id, name, age from persons".query[Person]
   }
 
+  def create: ConnectionIO[Unit] =
+    queries.create.run.void
+
   def insertMany(persons: List[Person]): ConnectionIO[Long] =
     Update[Person]("insert into persons (id, name, age) values (?, ?, ?)")
       .updateMany(persons).map(_.toLong)
 
-  def deleteWhenOlderThan(age: Long): ConnectionIO[Long] =
-    queries.deleteWhenOlderThan(age).run.map(_.toLong)
+  def deleteWhenOlderThen(age: Long): ConnectionIO[Long] =
+    queries.deleteWhenOlderThen(age).run.map(_.toLong)
 
   def listAll(): ConnectionIO[List[Person]] =
     queries.listAll.to[List]
-
-  def create: ConnectionIO[Unit] =
-    queries.create.run.void
 }
 ```
 
 ### 4. Mirror-test them
 
 ```scala
-class PersonRepoSpec extends Specification with DoobieSpec {
+import cats.effect.IO
+import munit.{CatsEffectSuite, ScalaCheckEffectSuite}
+import org.scalacheck.effect.PropF
+import org.scalacheck.{Arbitrary, Gen}
+import com.dimafeng.testcontainers.PostgreSQLContainer
+import com.dimafeng.testcontainers.munit.TestContainerForAll
+import org.testcontainers.utility.DockerImageName
 
-  def harness: Harness[PersonRepository, IO, ConnectionIO, Universe] =
-    new Harness(Universe.zero, DoobiePersonRepository, InMemoryPersonRepository, xa.trans)
+class PersonRepoSpec
+    extends CatsEffectSuite
+    with ScalaCheckEffectSuite
+    with MirraSuite[IO]
+    with TestContainerForAll {
 
-  "PersonRepository" should {
+  given Arbitrary[Person] = Arbitrary {
+    for {
+      id   <- Gen.uuid
+      name <- Gen.stringOfN(50, Gen.alphaChar)
+      age  <- Gen.posNum[Int]
+    } yield Person(id, name, age)
+  }
 
-    "not lose data on insert → read" in {
-      prop { persons: List[Person] =>
+  override val containerDef: PostgreSQLContainer.Def = PostgreSQLContainer.Def(
+    dockerImageName = DockerImageName.parse("postgres:15.1"),
+    databaseName    = "testcontainer-scala",
+    username        = "scala",
+    password        = "scala"
+  )
+
+  test("should insert and read") {
+    PropF.forAllF { (persons: List[Person]) =>
+      withContainers { (c: Containers) =>
+        val trans = DoobieSupport.rollbackTrans[IO](
+          "org.postgresql.Driver", c.jdbcUrl, c.username, c.password
+        )
+
+        def algebraUnderTest =
+          new AlgebraUnderTest(Universe.zero, DoobiePersonRepository, MirraPersonRepository, trans)
+
         assertMirroring {
-          harness.model.eval { x =>
+          algebraUnderTest.model.eval { x =>
             x.create *>
               x.insertMany(persons) *>
               x.listAll()
@@ -178,14 +215,23 @@ class PersonRepoSpec extends Specification with DoobieSpec {
         }
       }
     }
+  }
 
-    "delete only people older than the threshold" in {
-      prop { (persons: List[Person], age: Int) =>
+  test("should delete people older then") {
+    PropF.forAllF { (persons: List[Person], age: Int) =>
+      withContainers { (c: Containers) =>
+        val trans = DoobieSupport.rollbackTrans[IO](
+          "org.postgresql.Driver", c.jdbcUrl, c.username, c.password
+        )
+
+        def algebraUnderTest =
+          new AlgebraUnderTest(Universe.zero, DoobiePersonRepository, MirraPersonRepository, trans)
+
         assertMirroring {
-          harness.model.eval { x =>
+          algebraUnderTest.model.eval { x =>
             x.create *>
               x.insertMany(persons) *>
-              x.deleteWhenOlderThan(age) *>
+              x.deleteWhenOlderThen(age) *>
               x.listAll()
           }
         }
@@ -201,19 +247,23 @@ Notice there's no assertion logic about _what_ the result should be. No filterin
 
 **`Mirra[S, A]`** — A `State`-like monad with built-in helpers for modeling CRUD operations (`insertMany`, `delete`, `all`, `unit`, etc.). Uses Monocle lenses to target collections within your state type `S`. This is where your expected behavior lives — in one place, as a real implementation, not scattered across test assertions.
 
-**`Harness[Alg, F, G, S]`** — Wires together a real implementation (`Alg[G]`) and a model (`Alg[Mirra[S, *]]`), using `FunctorK` / `SemigroupalK` to run both through the same algebra and compare results.
+**`AlgebraUnderTest[Alg, F, Tx, S]`** — Wires together a real implementation (`Alg[Tx]`) and a model (`Alg[Mirra[S, *]]`), using `FunctorK` / `SemigroupalK` to run both through the same algebra and compare results. `Tx ~> F` is a natural transformation (e.g. a Doobie transactor) that interprets the real effect into `F`.
 
 **`assertMirroring`** — Executes the program against both interpreters, diffs the results, and fails the test if they diverge.
+
+**`MirraSuite[F[_]]`** — A munit trait providing `assertMirroring`. Mix it into your test suite alongside `CatsEffectSuite` and `ScalaCheckEffectSuite`.
 
 **`FunctorK` / `SemigroupalK`** — Type classes from [cats-tagless](https://github.com/typelevel/cats-tagless) that allow transforming the effect type of an algebra. These are what make it possible to run a single program against two different interpreters. Derived automatically with `Derive.functorK` / `Derive.semigroupalK`.
 
 ## Dependencies
 
-Built with Scala 2.13.
+Built with Scala 3.
 
 **Core:** [cats-tagless](https://github.com/typelevel/cats-tagless) (FunctorK / SemigroupalK derivation), [Monocle](https://github.com/optics-dev/Monocle) (lenses for state manipulation).
 
-**Example module (test):** [Doobie](https://github.com/tpolecat/doobie), [Testcontainers](https://www.testcontainers.org/), [specs2](https://etorreborre.github.io/specs2/) + [ScalaCheck](https://scalacheck.org/), [magnolify-scalacheck](https://github.com/spotify/magnolify), [diffx](https://github.com/softwaremill/diffx).
+**munit module:** [munit](https://scalameta.org/munit/), [munit-cats-effect](https://github.com/typelevel/munit-cats-effect), [scalacheck-effect-munit](https://github.com/typelevel/scalacheck-effect).
+
+**Example module:** [Doobie](https://github.com/tpolecat/doobie), [Testcontainers](https://www.testcontainers.org/) (PostgreSQL), [ScalaCheck](https://scalacheck.org/).
 
 ## Inspiration
 

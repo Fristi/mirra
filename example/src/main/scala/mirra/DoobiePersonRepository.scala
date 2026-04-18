@@ -1,9 +1,9 @@
 package mirra
 
 import doobie._
-import doobie.implicits._
+import doobie.implicits.*
+import doobie.postgres.implicits.*
 import cats.implicits._
-import doobie.postgres.implicits._
 
 object DoobiePersonRepository extends PersonRepository[ConnectionIO] {
 
@@ -14,7 +14,7 @@ object DoobiePersonRepository extends PersonRepository[ConnectionIO] {
     def create =
       fr"""create table if not exists persons (
         |	id uuid primary key,
-        |	name text not null,
+        |	name varchar(50) not null,
         |	age numeric not null
         |)""".stripMargin.update
 
