@@ -32,7 +32,7 @@ This is the [test oracle](https://fsharpforfunandprofit.com/posts/property-based
 The expectations now live in one place (the model), they're a real runnable implementation rather than ad-hoc assertions, and every property test is just: "does the real thing do the same as the model?"
 
 ```
-  Generate random operations
+  Generate random data
             │
     ┌───────┴───────┐
     ▼               ▼

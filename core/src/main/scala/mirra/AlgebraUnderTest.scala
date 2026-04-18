@@ -1,15 +1,15 @@
 package mirra
 
-import cats.implicits._
-import cats.data.{State, Tuple2K}
+import cats.data.Tuple2K
+import cats.implicits.*
 import cats.tagless.SemigroupalK
 import cats.{Functor, ~>}
 
+class AlgebraUnderTest[Alg[_[_]], F[_], Tx[_], D](initState: D, db: Alg[Tx], model: Alg[[X] =>> Mirra[D, X]], tx: Tx ~> F) {
 
-class Harness[Alg[_[_]], F[_], Tx[_], D](initState: D, db: Alg[Tx], model: Alg[Mirra[D, *]], tx: Tx ~> F) {
-
-  type Eff[A] = Tuple2K[Tx, Mirra[D, *], A]
-  type Paired = Alg[Eff]
+  private type Mirra_[A] = Mirra[D, A]
+  private type Eff[A] = Tuple2K[Tx, Mirra_, A]
+  private type Paired = Alg[Eff]
 
   trait Evaluator {
     def eval[A](f: Paired => Eff[A]): F[(A, A)]

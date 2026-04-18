@@ -5,7 +5,7 @@ import cats.data.State
 import cats.implicits._
 import monocle.Lens
 
-final case class Mirra[D, A] private(db: State[D, A]) {
+final case class Mirra[D, A] (db: State[D, A]) {
   def run(state: D): A = db.runA(state).value
 }
 
@@ -80,7 +80,7 @@ object Mirra {
       } yield toInsert ++ updated
     }
 
-  implicit def monad[D]: Monad[Mirra[D, *]] = new Monad[Mirra[D, *]] {
+  implicit def monad[D]: Monad[[A] =>> Mirra[D, A]] = new (Monad[[A] =>> Mirra[D, A]]) {
     def pure[A](x: A): Mirra[D, A] = succeed(x)
 
     def flatMap[A, B](fa: Mirra[D, A])(f: A => Mirra[D, B]): Mirra[D, B] =
