@@ -13,7 +13,7 @@ import org.scalacheck.effect.PropF
 import org.scalacheck.{Arbitrary, Gen}
 import org.testcontainers.utility.DockerImageName
 
-class PersonRepoSpec extends CatsEffectSuite with ScalaCheckEffectSuite with MirraSuite[IO] with TestContainerForAll {
+class DoobiePersonRepositorySpec extends CatsEffectSuite with ScalaCheckEffectSuite with MirraSuite[IO] with TestContainerForAll {
 
   given Arbitrary[Person] = Arbitrary {
     for {
