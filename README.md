@@ -128,6 +128,12 @@ This is your model — the single source of truth for expected behavior. It's so
 
 ### 3. Write the real implementation
 
+Two integrations are provided out of the box.
+
+#### Doobie
+
+The effect type is `ConnectionIO` — Doobie's own connection action type.
+
 ```scala
 import doobie._
 import doobie.implicits._
@@ -164,30 +170,77 @@ object DoobiePersonRepository extends PersonRepository[ConnectionIO] {
 }
 ```
 
-### 4. Mirror-test them
+#### Skunk
+
+The effect type is `Kleisli[F, Session[F], *]` — a function from a live Skunk session to an `F` action. All composed operations share the same session, so they run in the same transaction.
 
 ```scala
-import cats.effect.IO
-import munit.{CatsEffectSuite, ScalaCheckEffectSuite}
-import org.scalacheck.effect.PropF
-import org.scalacheck.{Arbitrary, Gen}
-import com.dimafeng.testcontainers.PostgreSQLContainer
-import com.dimafeng.testcontainers.munit.TestContainerForAll
-import org.testcontainers.utility.DockerImageName
+import cats.data.Kleisli
+import cats.effect.Async
+import cats.implicits.*
+import skunk.*
+import skunk.codec.all.*
+import skunk.data.Completion
+import skunk.implicits.*
 
-class PersonRepoSpec
+class SkunkPersonRepository[F[_]: Async] extends PersonRepository[[A] =>> Kleisli[F, Session[F], A]] {
+
+  private val personCodec: Codec[Person] =
+    (uuid ~ text ~ int4).imap { case id ~ name ~ age => Person(id, name, age) }(p =>
+      p.id ~ p.name ~ p.age
+    )
+
+  private val createCommand: Command[Void] =
+    sql"""
+      CREATE TABLE IF NOT EXISTS persons (
+        id uuid PRIMARY KEY,
+        name text NOT NULL,
+        age int4 NOT NULL
+      )
+    """.command
+
+  private val insertCommand: Command[Person] =
+    sql"INSERT INTO persons (id, name, age) VALUES ($personCodec)".command
+
+  private val listAllQuery: Query[Void, Person] =
+    sql"SELECT id, name, age FROM persons".query(personCodec)
+
+  private val deleteOlderThanCommand: Command[Long] =
+    sql"DELETE FROM persons WHERE age > ${int8}".command
+
+  def create: Kleisli[F, Session[F], Unit] =
+    Kleisli(_.execute(createCommand).void)
+
+  def insertMany(persons: List[Person]): Kleisli[F, Session[F], Long] = Kleisli { session =>
+    session.prepareR(insertCommand).use(pc => persons.traverse(pc.execute).map(_.length.toLong))
+  }
+
+  def deleteWhenOlderThen(age: Long): Kleisli[F, Session[F], Long] = Kleisli { session =>
+    session.prepareR(deleteOlderThanCommand).use(_.execute(age).map {
+      case Completion.Delete(n) => n.toLong
+      case _                   => 0L
+    })
+  }
+
+  def listAll(): Kleisli[F, Session[F], List[Person]] =
+    Kleisli(_.execute(listAllQuery))
+}
+```
+
+### 4. Mirror-test them
+
+#### Doobie
+
+`DoobieSupport.rollbackTrans` returns a `ConnectionIO ~> F` natural transformation that runs each test inside a transaction and always rolls back, leaving the database clean between property iterations.
+
+```scala
+class DoobiePersonRepositorySpec
     extends CatsEffectSuite
     with ScalaCheckEffectSuite
     with MirraSuite[IO]
     with TestContainerForAll {
 
-  given Arbitrary[Person] = Arbitrary {
-    for {
-      id   <- Gen.uuid
-      name <- Gen.stringOfN(50, Gen.alphaChar)
-      age  <- Gen.posNum[Int]
-    } yield Person(id, name, age)
-  }
+  given Arbitrary[Person] = Arbitrary { /* ... */ }
 
   override val containerDef: PostgreSQLContainer.Def = PostgreSQLContainer.Def(
     dockerImageName = DockerImageName.parse("postgres:15.1"),
@@ -208,31 +261,49 @@ class PersonRepoSpec
 
         assertMirroring {
           algebraUnderTest.model.eval { x =>
-            x.create *>
-              x.insertMany(persons) *>
-              x.listAll()
+            x.create *> x.insertMany(persons) *> x.listAll()
           }
         }
       }
     }
   }
+}
+```
 
-  test("should delete people older then") {
-    PropF.forAllF { (persons: List[Person], age: Int) =>
+#### Skunk
+
+`SkunkSupport.rollbackTrans` does the same for Skunk: opens a session, begins a transaction, and always rolls back. It returns a `Kleisli[F, Session[F], *] ~> F` nat-trans directly, so the test body is identical in structure. Noop otel4s tracing is wired internally — no setup required.
+
+```scala
+class SkunkPersonRepositorySpec
+    extends CatsEffectSuite
+    with ScalaCheckEffectSuite
+    with MirraSuite[IO]
+    with TestContainerForAll {
+
+  given Arbitrary[Person] = Arbitrary { /* ... */ }
+
+  override val containerDef: PostgreSQLContainer.Def = /* same as Doobie */
+
+  test("should insert and read") {
+    PropF.forAllF { (persons: List[Person]) =>
       withContainers { (c: Containers) =>
-        val trans = DoobieSupport.rollbackTrans[IO](
-          "org.postgresql.Driver", c.jdbcUrl, c.username, c.password
-        )
+        SkunkSupport.rollbackTrans[IO](
+          host     = c.container.getHost,
+          port     = c.container.getMappedPort(5432),
+          user     = c.username,
+          database = c.databaseName,
+          password = Some(c.password)
+        ).use { trans =>
+          def algebraUnderTest =
+            new AlgebraUnderTest[PersonRepository, IO, [A] =>> Kleisli[IO, Session[IO], A], Universe](
+              Universe.zero, SkunkPersonRepository[IO], MirraPersonRepository, trans
+            )
 
-        def algebraUnderTest =
-          new AlgebraUnderTest(Universe.zero, DoobiePersonRepository, MirraPersonRepository, trans)
-
-        assertMirroring {
-          algebraUnderTest.model.eval { x =>
-            x.create *>
-              x.insertMany(persons) *>
-              x.deleteWhenOlderThen(age) *>
-              x.listAll()
+          assertMirroring {
+            algebraUnderTest.model.eval { x =>
+              x.create *> x.insertMany(persons) *> x.listAll()
+            }
           }
         }
       }
@@ -255,6 +326,15 @@ Notice there's no assertion logic about _what_ the result should be. No filterin
 
 **`FunctorK` / `SemigroupalK`** — Type classes from [cats-tagless](https://github.com/typelevel/cats-tagless) that allow transforming the effect type of an algebra. These are what make it possible to run a single program against two different interpreters. Derived automatically with `Derive.functorK` / `Derive.semigroupalK`.
 
+## Modules
+
+| Module | What it provides |
+|---|---|
+| `core` | `Mirra[S, A]`, `AlgebraUnderTest`, `MirraSyntax` |
+| `munit` | `MirraSuite[F]` — mix into munit suites |
+| `doobie` | `DoobieSupport.rollbackTrans` — `ConnectionIO ~> F` with always-rollback |
+| `skunk` | `SkunkSupport.rollbackTrans` — `Kleisli[F, Session[F], *] ~> F` with always-rollback |
+
 ## Dependencies
 
 Built with Scala 3.
@@ -263,7 +343,11 @@ Built with Scala 3.
 
 **munit module:** [munit](https://scalameta.org/munit/), [munit-cats-effect](https://github.com/typelevel/munit-cats-effect), [scalacheck-effect-munit](https://github.com/typelevel/scalacheck-effect).
 
-**Example module:** [Doobie](https://github.com/tpolecat/doobie), [Testcontainers](https://www.testcontainers.org/) (PostgreSQL), [ScalaCheck](https://scalacheck.org/).
+**doobie module:** [Doobie](https://github.com/tpolecat/doobie).
+
+**skunk module:** [Skunk](https://github.com/tpolecat/skunk) 1.0.0.
+
+**Example module:** Doobie + Skunk, [Testcontainers](https://www.testcontainers.org/) (PostgreSQL), [ScalaCheck](https://scalacheck.org/).
 
 ## Inspiration
 
