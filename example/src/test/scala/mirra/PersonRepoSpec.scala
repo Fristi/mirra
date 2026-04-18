@@ -49,17 +49,26 @@ class PersonRepoSpec extends CatsEffectSuite with ScalaCheckEffectSuite with Mir
         }
       }
     }
+  }
 
-    //  property("should delete people older then") = forAll { (persons: List[Person]) =>
-    //    assertMirroring {
-    //      harness.model.eval { x =>
-    //        x.create *>
-    //          x.insertMany(persons) *>
-    //          x.deleteWhenOlderThen(age) *>
-    //          x.listAll()
-    //      }
-    //    }
-    //
-    //  }
+  test("should delete people older then") {
+    PropF.forAllF { (persons: List[Person], age: Int) =>
+      withContainers { (c: Containers) =>
+
+        val trans = DoobieSupport.rollbackTrans[IO]("org.postgresql.Driver", c.jdbcUrl, c.username, c.password)
+
+        def algebraUnderTest =
+          new AlgebraUnderTest(Universe.zero, DoobiePersonRepository, MirraPersonRepository, trans)
+
+        assertMirroring {
+          algebraUnderTest.model.eval { x =>
+            x.create *>
+              x.insertMany(persons) *>
+              x.deleteWhenOlderThen(age) *>
+              x.listAll()
+          }
+        }
+      }
+    }
   }
 }
