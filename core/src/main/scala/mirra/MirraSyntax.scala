@@ -112,6 +112,14 @@ trait MirraSyntax {
     /** Groups elements by the key produced by `f`. */
     def groupBy[B](f: A => B)(implicit F: Foldable[F]): Mirra[D, Map[B, List[A]]] =
       Mirra(mirra.db.map(_.toList.groupBy(f)))
+
+    /** Returns at most `n` elements from the start of the result collection. */
+    def limit(n: Int)(implicit F: Foldable[F]): Mirra[D, List[A]] =
+      Mirra(mirra.db.map(_.toList.take(n)))
+
+    /** Skips the first `n` elements of the result collection. */
+    def offset(n: Int)(implicit F: Foldable[F]): Mirra[D, List[A]] =
+      Mirra(mirra.db.map(_.toList.drop(n)))
   }
 
 }
