@@ -35,6 +35,7 @@ import cats.data.Kleisli
 import cats.effect.Async
 import skunk._
 import skunk.codec.all._
+import skunk.data.Completion
 import skunk.implicits._
 
 class SkunkPersonRepository[F[_]: Async] extends PersonRepository[[A] =>> Kleisli[F, Session[F], A]] {
