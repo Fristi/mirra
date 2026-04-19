@@ -333,4 +333,72 @@ class MirraSpec extends FunSuite with MirraSyntax {
     )
     assertEquals(result, List((a, "a")))
   }
+
+  // ------------------------------------------------------------------
+  // sortBy / sortByDesc
+  // ------------------------------------------------------------------
+
+  test("sortBy orders elements ascending by key") {
+    val state = World(List(c, a, b), Nil)
+    assertEquals(run(Mirra.all(World.items).sortBy(_.value), state), List(a, b, c))
+  }
+
+  test("sortByDesc orders elements descending by key") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.all(World.items).sortByDesc(_.value), state), List(c, b, a))
+  }
+
+  test("sortBy on empty collection returns empty list") {
+    assertEquals(run(Mirra.all(World.items).sortBy(_.value)), List.empty[Item])
+  }
+
+  // ------------------------------------------------------------------
+  // minBy / maxBy
+  // ------------------------------------------------------------------
+
+  test("minBy returns the element with the smallest key") {
+    val state = World(List(b, a, c), Nil)
+    assertEquals(run(Mirra.all(World.items).minBy(_.value), state), Some(a))
+  }
+
+  test("maxBy returns the element with the largest key") {
+    val state = World(List(a, c, b), Nil)
+    assertEquals(run(Mirra.all(World.items).maxBy(_.value), state), Some(c))
+  }
+
+  test("minBy returns None on empty collection") {
+    assertEquals(run(Mirra.all(World.items).minBy(_.value)), None)
+  }
+
+  test("maxBy returns None on empty collection") {
+    assertEquals(run(Mirra.all(World.items).maxBy(_.value)), None)
+  }
+
+  // ------------------------------------------------------------------
+  // sumBy
+  // ------------------------------------------------------------------
+
+  test("sumBy sums extracted numeric values") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.all(World.items).sumBy(_.value), state), 60)
+  }
+
+  test("sumBy returns zero on empty collection") {
+    assertEquals(run(Mirra.all(World.items).sumBy(_.value)), 0)
+  }
+
+  // ------------------------------------------------------------------
+  // groupBy
+  // ------------------------------------------------------------------
+
+  test("groupBy partitions elements by key") {
+    val d = Item(4, "a", 40)
+    val state = World(List(a, b, c, d), Nil)
+    val result = run(Mirra.all(World.items).groupBy(_.name), state)
+    assertEquals(result, Map("a" -> List(a, d), "b" -> List(b), "c" -> List(c)))
+  }
+
+  test("groupBy on empty collection returns empty map") {
+    assertEquals(run(Mirra.all(World.items).groupBy(_.name)), Map.empty[String, List[Item]])
+  }
 }
