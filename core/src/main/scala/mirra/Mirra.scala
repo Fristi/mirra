@@ -134,6 +134,48 @@ object Mirra {
       } yield toInsert ++ updated
     }
 
+  /** Upserts a single `item` into the collection at `at` using a binary merge
+   *  function.
+   *
+   *  When a conflict is detected via `conflict`, `merge(existing, incoming)` is
+   *  called so callers can choose which fields from the incoming record to apply
+   *  — analogous to Postgres `ON CONFLICT DO UPDATE SET col = EXCLUDED.col`.
+   *  When no conflict exists the item is appended unchanged.
+   *  Returns the number of affected rows (always `1L`).
+   *
+   *  @see [[upsertManyWith]] for bulk variant. */
+  def upsertWith[D, A, B](at: Lens[D, List[A]])(conflict: A => B, merge: (A, A) => A, item: A): Mirra[D, Long] =
+    upsertManyWith(at)(conflict, merge, List(item))
+
+  /** Upserts `items` into the collection at `at` using a binary merge function.
+   *
+   *  On conflict `merge(existing, incoming)` selects which fields to keep,
+   *  mirroring Postgres `ON CONFLICT DO UPDATE SET …`.
+   *  Returns the total number of affected rows (inserts + updates).
+   *
+   *  @see [[upsertManyWith_]] to also receive the affected items. */
+  def upsertManyWith[D, A, B](at: Lens[D, List[A]])(conflict: A => B, merge: (A, A) => A, items: List[A]): Mirra[D, Long] =
+    upsertManyWith_(at)(conflict, merge, items).size
+
+  /** Upserts `items` into the collection at `at` using a binary merge function
+   *  and returns the affected items (newly inserted items and post-merge
+   *  versions of updated items).
+   *
+   *  On conflict `merge(existing, incoming)` selects which fields to keep,
+   *  mirroring Postgres `ON CONFLICT DO UPDATE SET …`. */
+  def upsertManyWith_[D, A, B](at: Lens[D, List[A]])(conflict: A => B, merge: (A, A) => A, items: List[A]): Mirra[D, List[A]] =
+    Mirra {
+      for {
+        elements       <- State.get[D]
+        incomingByKey   = items.map(x => conflict(x) -> x).toMap
+        (toUpdate, notToUpdate) = at.get(elements).partition(x => incomingByKey.contains(conflict(x)))
+        updated         = toUpdate.map(x => merge(x, incomingByKey(conflict(x))))
+        conflictKeys    = toUpdate.map(conflict).toSet
+        toInsert        = items.filterNot(x => conflictKeys.contains(conflict(x)))
+        _              <- State.modify[D](s => at.modify(_ => updated ++ notToUpdate ++ toInsert)(s))
+      } yield toInsert ++ updated
+    }
+
   /** [[cats.Monad]] instance for `Mirra[D, *]`, enabling `for`-comprehension
    *  sequencing of operations over the same domain `D`. */
   implicit def monad[D]: Monad[[A] =>> Mirra[D, A]] = new (Monad[[A] =>> Mirra[D, A]]) {
