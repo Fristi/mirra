@@ -78,7 +78,11 @@ Rather than listing properties upfront, I'd describe it as: the model defines th
 
 **`MirraZIOSuite[Alg[_[_]]]`** — A ZIO Test equivalent of `MirraSuite`. Extends `ZIOSpecDefault`; the effect type is fixed to `Task`. Property inputs come from ZIO Test's built-in `Gen`; resource management uses `ZLayer` + `provideShared`.
 
-**`FunctorK` / `SemigroupalK`** — Type classes from [cats-tagless](https://github.com/typelevel/cats-tagless) that allow transforming the effect type of an algebra. Derived automatically with `Derive.functorK` / `Derive.semigroupalK`.
+**`FunctorK` / `SemigroupalK`** — Type classes from [cats-tagless](https://typelevel.org/cats-tagless/) that lift familiar abstractions to the level of type constructors of kind `(* -> *) -> *` — i.e., algebras whose effect type is a parameter. `FunctorK` lets you map the effect type of an algebra (e.g. turn `Alg[IO]` into `Alg[Option]`). `SemigroupalK` lets you combine two interpretations into one that runs both simultaneously — which is exactly how `SystemUnderTest` wires the real implementation together with the in-memory model. Both are derived automatically with `Derive.functorK` / `Derive.semigroupalK`. See the [cats-tagless documentation](https://typelevel.org/cats-tagless/) to learn more.
+
+**State monad** — `Mirra[S, A]` is built on top of the `State[S, A]` monad: a pure description of a computation that reads from and writes to a value of type `S`, returning a result of type `A`. Sequencing `State` actions threads the state through automatically without any mutable variables. If you are new to the State monad, the [Cats documentation](https://typelevel.org/cats/datatypes/state.html) has a gentle introduction.
+
+**Lenses** — Mirra uses [Monocle](https://www.optics.dev/Monocle/) lenses to focus on a specific collection within your state type `S`. A lens is a composable, type-safe getter/setter pair: given a large state object, a lens lets you zoom in on one field, apply a transformation, and return the updated whole — without touching anything else. See the [Monocle documentation](https://www.optics.dev/Monocle/) for a full introduction to optics.
 
 ## Modules
 

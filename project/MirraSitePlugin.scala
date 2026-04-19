@@ -38,7 +38,7 @@ object MirraSitePlugin extends AutoPlugin {
           subtitle    = Some("Mirror-test your tagless final algebras in Scala"),
           license     = Some("MIT"),
           documentationLinks = Seq(
-            TextLink.internal(Root / "index.md", "Documentation"),
+            TextLink.internal(Root / "introduction.md", "Introduction"),
           ),
           projectLinks = Seq(
             IconLink.external("https://github.com/Fristi/mirra", HeliumIcon.github),
