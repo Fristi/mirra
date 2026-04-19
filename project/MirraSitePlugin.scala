@@ -23,7 +23,7 @@ object MirraSitePlugin extends AutoPlugin {
     laikaConfig := LaikaConfig.defaults.withMessageFilters(
       MessageFilters.custom(
         failOn = MessageFilter.Fatal,
-        render = MessageFilter.Warning,
+        render = MessageFilter.Fatal,
       )
     ),
     tlSiteHelium := {
