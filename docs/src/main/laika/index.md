@@ -64,13 +64,7 @@ This is much better than mocks: a mock returns whatever you tell it to, even out
 
 ### What properties fall out of this?
 
-| Property | What it catches |
-|---|---|
-| **Data loss** | Insert → read doesn't return everything that was inserted |
-| **Locality** | A delete/update affects records it shouldn't (or misses ones it should) |
-| **Idempotency** | Applying an operation twice changes the result vs. applying it once |
-
-You don't need to encode these properties manually. They emerge naturally from mirroring: if the real implementation drops a record, reorders something, or over-deletes, the model will disagree.
+Rather than listing properties upfront, I'd describe it as: the model defines the expected semantics; anything the real implementation does differently is a bug. The specific property names (locality, idempotency, etc.) are just post-hoc labels for classes of divergence you observe. The strength of the approach is you don't need to enumerate them — but that also means gaps in your model or generator leave blind spots.
 
 ## Key concepts
 

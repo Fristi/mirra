@@ -1,13 +1,14 @@
 import laika.ast.Path.Root
-import laika.config.{MessageFilter, MessageFilters}
+import laika.config.{MessageFilter, MessageFilters, SyntaxHighlighting}
+import laika.format.Markdown
 import laika.helium.Helium
-import laika.helium.config._
+import laika.helium.config.*
 import laika.sbt.LaikaConfig
-import laika.sbt.LaikaPlugin.autoImport.laikaConfig
+import laika.sbt.LaikaPlugin.autoImport.{laikaConfig, laikaExtensions, laikaIncludeAPI}
 import org.typelevel.sbt.TypelevelSitePlugin
-import org.typelevel.sbt.TypelevelSitePlugin.autoImport._
-import sbt._
-import sbt.Keys._
+import org.typelevel.sbt.TypelevelSitePlugin.autoImport.*
+import sbt.*
+import sbt.Keys.*
 
 object MirraSitePlugin extends AutoPlugin {
 
@@ -16,15 +17,8 @@ object MirraSitePlugin extends AutoPlugin {
 
   override def projectSettings: Seq[Setting[_]] = Seq(
     tlSitePublishBranch := Some("master"),
-    // Laika 1.3.x parses type-parameter brackets like [Person] / [F[_]] in
-    // code blocks as reference-style link IDs. Only Fatal messages abort the
-    // build; render only Error+ inline so link-reference warnings are suppressed.
-    laikaConfig := LaikaConfig.defaults.withMessageFilters(
-      MessageFilters.custom(
-        failOn = MessageFilter.Fatal,
-        render = MessageFilter.Error,
-      )
-    ),
+    laikaIncludeAPI := true,
+    laikaExtensions := Seq(Markdown.GitHubFlavor, SyntaxHighlighting),
     tlSiteHelium := {
       Helium.defaults.site
         .metadata(

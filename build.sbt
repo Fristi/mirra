@@ -1,6 +1,10 @@
 import sbt.Compile
 import sbt.Keys.libraryDependencies
 
+import laika.config._
+import laika.format.Markdown
+import laika.config.SyntaxHighlighting
+
 ThisBuild / organization         := "io.github.fristi"
 ThisBuild / organizationName     := "Fristi"
 ThisBuild / scalaVersion         := "3.8.3"
@@ -97,12 +101,13 @@ val example =
     .dependsOn(core, munit, doobie, skunk, zioTest)
 
 lazy val docs = project
-  .in(file("site"))
+  .in(file("docs"))
   .enablePlugins(MirraSitePlugin)
   .dependsOn(core, doobie, skunk, munit, zioTest)
   .settings(commonSettings)
   .settings(
     publish / skip := true,
+    mdocIn := (Compile / sourceDirectory).value / "laika",
     libraryDependencies ++= Seq(
       "org.tpolecat" %% "doobie-postgres"                  % "1.0.0-RC12",
       "com.dimafeng" %% "testcontainers-scala-postgresql"  % "0.44.1",
