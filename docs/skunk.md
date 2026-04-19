@@ -30,6 +30,7 @@ object PersonRepository {
 ```
 
 ```scala mdoc
+import cats.implicits._
 import cats.data.Kleisli
 import cats.effect.Async
 import skunk._
