@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+  <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Typelevel Laika + Helium Theme" />
+  <title>Getting Started</title>
+  
+  
+  <meta name="description" content="docs"/>
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono:500">
+  
+  <link rel="stylesheet" type="text/css" href="helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="helium/site/laika-helium.css" />
+  <script src="helium/site/laika-helium.js"></script>
+  
+  
+  <script> /* for avoiding page load transitions */ </script>
+</head>
+
+  <body>
+
+    <header id="top-bar" class="light-default dark-default">
+
+  <div class="row">
+    <a id="nav-icon">
+      <i class="icofont-laika navigationMenu" title="Navigation">&#xefa2;</i>
+    </a>
+    
+    
+  </div>
+
+  <a class="icon-link glyph-link" href="index.html"><i class="icofont-laika home" title="Home">&#xef47;</i></a>
+
+  <div class="row links">
+    
+    <a class="icon-link svg-link" href="https://github.com/Fristi/mirra"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+  </div>  
+
+</header>
+    
+    <nav id="sidebar">
+
+  <div class="row">
+    
+    <a class="icon-link svg-link" href="https://github.com/Fristi/mirra"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+  </div>
+
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="index.html">Mirra</a></li>
+    <li class="level1 active nav-leaf"><a href="#">Getting Started</a></li>
+    <li class="level1 nav-leaf"><a href="doobie.html">Doobie</a></li>
+    <li class="level1 nav-leaf"><a href="skunk.html">Skunk</a></li>
+    <li class="level1 nav-leaf"><a href="munit.html">munit + cats-effect</a></li>
+    <li class="level1 nav-leaf"><a href="zio-test.html">ZIO Test</a></li>
+  </ul>
+
+</nav>
+
+    <div id="container">
+
+      
+<nav id="page-nav">
+  <p class="header"><a href="#">Getting Started</a></p>
+
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="#_1-define-the-algebra">1. Define the algebra</a></li>
+    <li class="level1 nav-leaf"><a href="#_2-write-the-in-memory-model">2. Write the in-memory model</a></li>
+    <li class="level1 nav-leaf"><a href="#next-steps">Next steps</a></li>
+  </ul>
+
+  <p class="footer"></p>
+</nav>
+
+
+      <main class="content">
+
+        <h1 id="getting-started" class="title">Getting Started</h1>
+        <p>The full example shown here is also available in the <a href="https://github.com/Fristi/mirra/tree/master/example"><code>example</code></a> module.</p>
+        
+        <h2 id="_1-define-the-algebra" class="section"><a class="anchor-link left" href="#_1-define-the-algebra"><i class="icofont-laika link">&#xef71;</i></a>1. Define the algebra</h2>
+        <p>Start with a tagless final algebra for your repository. The algebra needs <code>FunctorK</code> and <code>SemigroupalK</code> instances so that <code>SystemUnderTest</code> can run a single program through both interpreters simultaneously. cats-tagless can derive them automatically.</p>
+        <p>```scala
+        import cats.tagless.{Derive, FunctorK, SemigroupalK}
+        import java.util.UUID</p>
+        <p>final case class Person(id: UUID, name: String, age: Int)</p>
+        <p>trait PersonRepository[F<span class="inline error"><span class="runtime-message error">unresolved link id reference: _</span><code>[_]</code></span>] {
+          def create: F<span class="inline error"><span class="runtime-message error">unresolved link id reference: unit</span><code>[Unit]</code></span>
+          def insertMany(persons: List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>): F<span class="inline error"><span class="runtime-message error">unresolved link id reference: long</span><code>[Long]</code></span>
+          def deleteWhenOlderThen(age: Long): F<span class="inline error"><span class="runtime-message error">unresolved link id reference: long</span><code>[Long]</code></span>
+          def listAll(): F[List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>]
+        }</p>
+        <p>object PersonRepository {
+          implicit val functorK: FunctorK<span class="inline error"><span class="runtime-message error">unresolved link id reference: personrepository</span><code>[PersonRepository]</code></span>     = Derive.functorK
+          implicit val semigroupalK: SemigroupalK<span class="inline error"><span class="runtime-message error">unresolved link id reference: personrepository</span><code>[PersonRepository]</code></span> = Derive.semigroupalK
+        }
+        ```</p>
+        
+        <h2 id="_2-write-the-in-memory-model" class="section"><a class="anchor-link left" href="#_2-write-the-in-memory-model"><i class="icofont-laika link">&#xef71;</i></a>2. Write the in-memory model</h2>
+        <p>Define a &quot;universe&quot; — a case class holding the state — and implement the algebra using Mirra&#39;s CRUD helpers with Monocle <code>Focus</code> lenses. This model is the single source of truth for expected behavior. It&#39;s so simple (append to a list, filter a list, return a list) that it&#39;s hard to get wrong.</p>
+        <p>```scala
+        import mirra.Mirra
+        import monocle.Focus</p>
+        <p>final case class Universe(persons: List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>)</p>
+        <p>object Universe {
+          def zero: Universe = Universe(Nil)
+        }</p>
+        <p>object MirraPersonRepository extends PersonRepository[<span class="inline error"><span class="runtime-message error">unresolved link id reference: a</span><code>[A]</code></span> =&gt;&gt; Mirra<span class="inline error"><span class="runtime-message error">unresolved link id reference: universe, a</span><code>[Universe, A]</code></span>] {
+          def create: Mirra<span class="inline error"><span class="runtime-message error">unresolved link id reference: universe, unit</span><code>[Universe, Unit]</code></span> =
+            Mirra.unit</p>
+        <p>def insertMany(persons: List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>): Mirra<span class="inline error"><span class="runtime-message error">unresolved link id reference: universe, long</span><code>[Universe, Long]</code></span> =
+            Mirra.insertMany(Focus<span class="inline error"><span class="runtime-message error">unresolved internal reference: _.persons</span><code>[Universe](_.persons)</code></span>)(persons)</p>
+        <p>def deleteWhenOlderThen(age: Long): Mirra<span class="inline error"><span class="runtime-message error">unresolved link id reference: universe, long</span><code>[Universe, Long]</code></span> =
+            Mirra.delete(Focus<span class="inline error"><span class="runtime-message error">unresolved internal reference: _.persons</span><code>[Universe](_.persons)</code></span>)(_.age &gt; age)</p>
+        <p>def listAll(): Mirra[Universe, List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>] =
+            Mirra.all(Focus<span class="inline error"><span class="runtime-message error">unresolved internal reference: _.persons</span><code>[Universe](_.persons)</code></span>)
+        }
+        ```</p>
+        
+        <h2 id="next-steps" class="section"><a class="anchor-link left" href="#next-steps"><i class="icofont-laika link">&#xef71;</i></a>Next steps</h2>
+        <p>With the algebra and model in place, wire in a real database backend and a test framework integration:</p>
+        <ul>
+          <li><a href="doobie.html">Doobie</a> — <code>ConnectionIO</code>-based backend + munit example</li>
+          <li><a href="skunk.html">Skunk</a> — <code>Kleisli[F, Session[F], *]</code>-based backend</li>
+          <li><a href="munit.html">munit + cats-effect</a> — property-test with <code>MirraSuite</code></li>
+          <li><a href="zio-test.html">ZIO Test</a> — property-test with <code>MirraZIOSuite</code></li>
+        </ul>
+
+        
+<hr class="footer-rule"/>
+<footer>
+  Site generated by <a href="https://typelevel.org/Laika/">Laika</a> with the Helium theme.
+</footer>
+
+
+      </main>
+
+    </div>
+
+  </body>
+
+</html>
