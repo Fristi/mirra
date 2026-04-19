@@ -14,6 +14,7 @@ ThisBuild / sonatypeCredentialHost := "central.sonatype.com"
 ThisBuild / sonatypeRepository     := "https://central.sonatype.com/api/v1/publisher"
 ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / versionScheme          := Some("early-semver")
+ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/Fristi/mirra"), "scm:git@github.com:Fristi/mirra.git"))
 
 val core =
   project.in(file("core"))
@@ -100,3 +101,9 @@ val example =
 def commonSettings = Seq(
   scalacOptions += "-experimental"
 )
+
+lazy val root = (project in file("."))
+  .aggregate(core, munit, doobie, skunk, zioTest)
+  .settings(
+    publish / skip := true
+  )
