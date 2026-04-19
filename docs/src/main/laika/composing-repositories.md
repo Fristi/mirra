@@ -24,8 +24,8 @@ trait PersonRepository[F[_]] {
 }
 
 object PersonRepository {
-  implicit val functorK: FunctorK[PersonRepository]         = Derive.functorK
-  implicit val semigroupalK: SemigroupalK[PersonRepository] = Derive.semigroupalK
+  given FunctorK[PersonRepository]    = Derive.functorK
+  given SemigroupalK[PersonRepository] = Derive.semigroupalK
 }
 
 trait OrganizationRepository[F[_]] {
@@ -35,8 +35,8 @@ trait OrganizationRepository[F[_]] {
 }
 
 object OrganizationRepository {
-  implicit val functorK: FunctorK[OrganizationRepository]         = Derive.functorK
-  implicit val semigroupalK: SemigroupalK[OrganizationRepository] = Derive.semigroupalK
+  given FunctorK[OrganizationRepository]    = Derive.functorK
+  given SemigroupalK[OrganizationRepository] = Derive.semigroupalK
 }
 ```
 
@@ -51,8 +51,8 @@ trait Repositories[F[_]] {
 }
 
 object Repositories {
-  implicit val functorK: FunctorK[Repositories]         = Derive.functorK
-  implicit val semigroupalK: SemigroupalK[Repositories] = Derive.semigroupalK
+  given FunctorK[Repositories]    = Derive.functorK
+  given SemigroupalK[Repositories] = Derive.semigroupalK
 }
 ```
 
