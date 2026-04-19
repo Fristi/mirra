@@ -12,6 +12,8 @@ ThisBuild / developers           := List(
 )
 ThisBuild / sonatypeCredentialHost := "central.sonatype.com"
 ThisBuild / sonatypeRepository     := "https://central.sonatype.com/api/v1/publisher"
+ThisBuild / publishTo              := sonatypePublishToBundle.value
+ThisBuild / versionScheme          := Some("early-semver")
 
 val core =
   project.in(file("core"))
