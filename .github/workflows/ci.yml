@@ -39,3 +39,30 @@ jobs:
 
       - name: Run example tests (requires Docker)
         run: sbt "example/test"
+
+  site:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: sbt
+
+      - uses: sbt/setup-sbt@v1
+
+      - name: Generate site
+        run: sbt docs/tlSite
+
+      - name: Publish site
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site/target/docs/site
+          keep_files: true

@@ -61,6 +61,20 @@ def commonSettings = Seq(
   scalacOptions += "-experimental"
 )
 
+lazy val docs = project
+  .in(file("site"))
+  .enablePlugins(MirraSitePlugin)
+  .dependsOn(core, doobie, skunk, munit, zioTest)
+  .settings(
+    scalaVersion := "3.8.3",
+    publish / skip := true,
+    libraryDependencies ++= Seq(
+      "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.44.1",
+      "com.dimafeng" %% "testcontainers-scala-munit"      % "0.44.1",
+      "dev.zio"      %% "zio-interop-cats"                % "23.1.0.3",
+    ),
+  )
+
 
 val example =
   project.in(file("example"))
