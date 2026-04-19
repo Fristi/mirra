@@ -20,8 +20,8 @@ trait PersonRepository[F[_]] {
 }
 
 object PersonRepository {
-  implicit val functorK: FunctorK[PersonRepository]     = Derive.functorK
-  implicit val semigroupalK: SemigroupalK[PersonRepository] = Derive.semigroupalK
+  given FunctorK[PersonRepository]    = Derive.functorK
+  given SemigroupalK[PersonRepository] = Derive.semigroupalK
 }
 ```
 
