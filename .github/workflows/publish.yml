@@ -2,11 +2,14 @@ name: Publish
 
 on:
   push:
-    branches: [master]
+    tags:
+      - "v*"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -30,3 +33,8 @@ jobs:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           PGP_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: sbt "+publishSigned; sonatypeCentralUpload"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
