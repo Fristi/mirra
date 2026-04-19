@@ -17,13 +17,12 @@ object MirraSitePlugin extends AutoPlugin {
   override def projectSettings: Seq[Setting[_]] = Seq(
     tlSitePublishBranch := Some("master"),
     // Laika 1.3.x parses type-parameter brackets like [Person] / [F[_]] in
-    // code blocks as reference-style link IDs. Raise the fail threshold so
-    // only truly Fatal messages abort the build; link-reference issues are
-    // still rendered as warnings.
+    // code blocks as reference-style link IDs. Only Fatal messages abort the
+    // build; render only Error+ inline so link-reference warnings are suppressed.
     laikaConfig := LaikaConfig.defaults.withMessageFilters(
       MessageFilters.custom(
         failOn = MessageFilter.Fatal,
-        render = MessageFilter.Warning,
+        render = MessageFilter.Error,
       )
     ),
     tlSiteHelium := {
