@@ -27,7 +27,7 @@ object MirraSitePlugin extends AutoPlugin {
         )
         .site
         .topNavigationBar(
-          homeLink = IconLink.internal(Root / "index.md", HeliumIcon.home),
+          homeLink = IconLink.internal(Root / "introduction.md", HeliumIcon.home),
           navLinks = Seq(
             IconLink.external("https://github.com/Fristi/mirra", HeliumIcon.github),
           ),
