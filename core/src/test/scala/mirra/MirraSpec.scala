@@ -401,4 +401,56 @@ class MirraSpec extends FunSuite with MirraSyntax {
   test("groupBy on empty collection returns empty map") {
     assertEquals(run(Mirra.all(World.items).groupBy(_.name)), Map.empty[String, List[Item]])
   }
+
+  // ------------------------------------------------------------------
+  // limit / offset
+  // ------------------------------------------------------------------
+
+  test("limit returns at most n elements") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.all(World.items).limit(2), state), List(a, b))
+  }
+
+  test("limit larger than collection returns all elements") {
+    val state = World(List(a, b), Nil)
+    assertEquals(run(Mirra.all(World.items).limit(10), state), List(a, b))
+  }
+
+  test("limit(0) returns empty list") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.all(World.items).limit(0), state), List.empty[Item])
+  }
+
+  test("limit on empty collection returns empty list") {
+    assertEquals(run(Mirra.all(World.items).limit(5)), List.empty[Item])
+  }
+
+  test("offset skips the first n elements") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.all(World.items).offset(1), state), List(b, c))
+  }
+
+  test("offset larger than collection returns empty list") {
+    val state = World(List(a, b), Nil)
+    assertEquals(run(Mirra.all(World.items).offset(10), state), List.empty[Item])
+  }
+
+  test("offset(0) returns all elements") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.all(World.items).offset(0), state), List(a, b, c))
+  }
+
+  test("offset on empty collection returns empty list") {
+    assertEquals(run(Mirra.all(World.items).offset(3)), List.empty[Item])
+  }
+
+  test("offset then limit acts as a page window") {
+    val state = World(List(a, b, c), Nil)
+    assertEquals(run(Mirra.all(World.items).offset(1).limit(1), state), List(b))
+  }
+
+  test("sortBy then offset then limit returns correct page") {
+    val state = World(List(c, a, b), Nil)
+    assertEquals(run(Mirra.all(World.items).sortBy(_.value).offset(1).limit(2), state), List(b, c))
+  }
 }
