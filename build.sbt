@@ -3,7 +3,6 @@ import sbt.Keys.libraryDependencies
 
 ThisBuild / organization         := "io.github.fristi"
 ThisBuild / organizationName     := "Fristi"
-ThisBuild / version              := "0.1.0"
 ThisBuild / scalaVersion         := "3.8.3"
 ThisBuild / licenses             := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / homepage             := Some(url("https://github.com/Fristi/mirra"))
