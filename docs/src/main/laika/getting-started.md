@@ -2,6 +2,8 @@
 
 The full example shown here is also available in the [`example`](https://github.com/Fristi/mirra/tree/master/example) module.
 
+
+
 ## 1. Define the algebra
 
 Start with a tagless final algebra for your repository. The algebra needs `FunctorK` and `SemigroupalK` instances so that `SystemUnderTest` can run a single program through both interpreters simultaneously. cats-tagless can derive them automatically.

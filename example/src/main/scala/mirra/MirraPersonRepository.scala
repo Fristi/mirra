@@ -1,26 +1,27 @@
 package mirra
 
 import monocle.Focus
-import monocle.macros.syntax
 
 
 final case class Universe(
-  persons: List[Person]
-)
+                           persons: List[Person]
+                         )
 
 object Universe {
   def zero: Universe = Universe(Nil)
+
+  val personsL = Focus[Universe](_.persons)
 }
 
 object MirraPersonRepository extends PersonRepository[[A] =>> Mirra[Universe, A]] {
   def insertMany(persons: List[Person]): Mirra[Universe, Long] =
-    Mirra.insertMany(Focus[Universe](_.persons))(persons)
+    Mirra.insertMany(Universe.personsL)(persons)
 
   def deleteWhenOlderThen(age: Long): Mirra[Universe, Long] =
-    Mirra.delete(Focus[Universe](_.persons))(_.age > age)
+    Mirra.delete(Universe.personsL)(_.age > age)
 
   def listAll(): Mirra[Universe, List[Person]] =
-    Mirra.all(Focus[Universe](_.persons))
+    Mirra.all(Universe.personsL)
 
   def create: Mirra[Universe, Unit] =
     Mirra.unit

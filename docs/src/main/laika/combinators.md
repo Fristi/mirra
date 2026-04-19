@@ -13,24 +13,29 @@ class MySpec extends MirraSuite[IO, MyAlg] with MirraSyntax { ... }
 
 ---
 
-```scala mdoc:invisible
+Some basics!
+
+```scala mdoc
 import cats.implicits.*
-import mirra.{Mirra, MirraSyntax}
+import mirra.*
 import monocle.Focus
 
 case class Person(id: Int, name: String, age: Int)
 case class Order(id: Int, personId: Int, amount: Int)
 case class Universe(persons: List[Person], orders: List[Order])
-object Universe { val zero: Universe = Universe(Nil, Nil) }
 
-object S extends MirraSyntax
-import S.*
+val personsL = Focus[Universe](_.persons)
+val ordersL = Focus[Universe](_.orders)
+
+object Universe:
+  val zero: Universe = Universe(Nil, Nil)
 
 def run[A](prog: Mirra[Universe, A], state: Universe = Universe.zero): A = prog.run(state)
 
 val alice = Person(1, "Alice", 30)
 val bob   = Person(2, "Bob",   25)
 val carol = Person(3, "Carol", 35)
+
 val three = Universe(List(alice, bob, carol), Nil)
 ```
 
@@ -50,7 +55,7 @@ run(Mirra.succeed[Universe, String]("hello"))
 Returns every element of the targeted collection without modifying state.
 
 ```scala mdoc
-run(Mirra.all(Focus[Universe](_.persons)), three)
+run(Mirra.all(personsL), three)
 ```
 
 ### `insert` / `insertMany` / `insertMany_`
@@ -58,9 +63,9 @@ run(Mirra.all(Focus[Universe](_.persons)), three)
 `insert` appends one element; `insertMany` appends a list. Both return the number of rows inserted as `Long`. The `_` suffix variant returns the inserted elements instead of the count.
 
 ```scala mdoc
-run(Mirra.insert(Focus[Universe](_.persons))(alice))
-run(Mirra.insertMany(Focus[Universe](_.persons))(List(alice, bob)))
-run(Mirra.insertMany_(Focus[Universe](_.persons))(List(alice, bob)))
+run(Mirra.insert(personsL)(alice))
+run(Mirra.insertMany(personsL)(List(alice, bob)))
+run(Mirra.insertMany_(personsL)(List(alice, bob)))
 ```
 
 State accumulates across steps in a `for`-comprehension:
@@ -68,9 +73,9 @@ State accumulates across steps in a `for`-comprehension:
 ```scala mdoc
 run(
   for {
-    _ <- Mirra.insert(Focus[Universe](_.persons))(alice)
-    _ <- Mirra.insert(Focus[Universe](_.persons))(bob)
-    r <- Mirra.all(Focus[Universe](_.persons))
+    _ <- Mirra.insert(personsL)(alice)
+    _ <- Mirra.insert(personsL)(bob)
+    r <- Mirra.all(personsL)
   } yield r
 )
 ```
@@ -82,8 +87,8 @@ run(
 ```scala mdoc
 run(
   for {
-    n <- Mirra.update(Focus[Universe](_.persons))(_.age > 28, _.copy(age = 99))
-    r <- Mirra.all(Focus[Universe](_.persons))
+    n <- Mirra.update(personsL)(_.age > 28, _.copy(age = 99))
+    r <- Mirra.all(personsL)
   } yield (n, r),
   three
 )
@@ -96,8 +101,8 @@ run(
 ```scala mdoc
 run(
   for {
-    removed   <- Mirra.delete_(Focus[Universe](_.persons))(_.age < 28)
-    remaining <- Mirra.all(Focus[Universe](_.persons))
+    removed   <- Mirra.delete_(personsL)(_.age < 28)
+    remaining <- Mirra.all(personsL)
   } yield (removed, remaining),
   three
 )
@@ -108,7 +113,7 @@ run(
 Clears the entire collection and returns the number of elements that existed before.
 
 ```scala mdoc
-run(Mirra.truncate(Focus[Universe](_.persons)), three)
+run(Mirra.truncate(personsL), three)
 ```
 
 ### `upsert` / `upsertMany`
@@ -120,8 +125,8 @@ Insert-or-replace based on a conflict key. When an existing element shares the s
 val renamed = alice.copy(name = "Alicia")
 run(
   for {
-    _ <- Mirra.upsert(Focus[Universe](_.persons))(_.id, _ => renamed, alice)
-    r <- Mirra.all(Focus[Universe](_.persons))
+    _ <- Mirra.upsert(personsL)(_.id, _ => renamed, alice)
+    r <- Mirra.all(personsL)
   } yield r,
   three
 )
@@ -138,8 +143,8 @@ Like `upsert` but uses a binary merge function `(existing, incoming) => A`, so y
 val incoming = Person(1, "Alicia", 99)
 run(
   for {
-    _ <- Mirra.upsertWith(Focus[Universe](_.persons))(_.id, (ex, inc) => ex.copy(name = inc.name), incoming)
-    r <- Mirra.all(Focus[Universe](_.persons))
+    _ <- Mirra.upsertWith(personsL)(_.id, (ex, inc) => ex.copy(name = inc.name), incoming)
+    r <- Mirra.all(personsL)
   } yield r,
   three
 )
@@ -158,7 +163,7 @@ Extension methods on `Mirra[D, F[A]]` from `MirraSyntax`. They transform or aggr
 Keeps only elements satisfying a predicate.
 
 ```scala mdoc
-run(Mirra.all(Focus[Universe](_.persons)).filter(_.age > 28), three)
+run(Mirra.all(personsL).filter(_.age > 28), three)
 ```
 
 ### `collect`
@@ -167,7 +172,7 @@ Applies a partial function and discards non-matches — like `filter` + `select`
 
 ```scala mdoc
 run(
-  Mirra.all(Focus[Universe](_.persons)).collect { case p if p.age > 28 => p.name },
+  Mirra.all(personsL).collect { case p if p.age > 28 => p.name },
   three
 )
 ```
@@ -177,8 +182,8 @@ run(
 Returns the first element of the result, or `None` if empty.
 
 ```scala mdoc
-run(Mirra.all(Focus[Universe](_.persons)).headOption, three)
-run(Mirra.all(Focus[Universe](_.persons)).filter(_.age > 99).headOption, three)
+run(Mirra.all(personsL).headOption, three)
+run(Mirra.all(personsL).filter(_.age > 99).headOption, three)
 ```
 
 ### `select`
@@ -186,7 +191,7 @@ run(Mirra.all(Focus[Universe](_.persons)).filter(_.age > 99).headOption, three)
 Maps every element — the SQL `SELECT` equivalent.
 
 ```scala mdoc
-run(Mirra.all(Focus[Universe](_.persons)).select(_.name), three)
+run(Mirra.all(personsL).select(_.name), three)
 ```
 
 ### `size`
@@ -194,7 +199,7 @@ run(Mirra.all(Focus[Universe](_.persons)).select(_.name), three)
 Returns the number of elements.
 
 ```scala mdoc
-run(Mirra.all(Focus[Universe](_.persons)).size, three)
+run(Mirra.all(personsL).size, three)
 ```
 
 ### `sumBy`
@@ -202,7 +207,7 @@ run(Mirra.all(Focus[Universe](_.persons)).size, three)
 Sums a numeric field across all elements.
 
 ```scala mdoc
-run(Mirra.all(Focus[Universe](_.persons)).sumBy(_.age), three)
+run(Mirra.all(personsL).sumBy(_.age), three)
 ```
 
 ### `minBy` / `maxBy`
@@ -210,8 +215,8 @@ run(Mirra.all(Focus[Universe](_.persons)).sumBy(_.age), three)
 Returns the element with the smallest or largest value of a key, or `None` if empty.
 
 ```scala mdoc
-run(Mirra.all(Focus[Universe](_.persons)).minBy(_.age), three)
-run(Mirra.all(Focus[Universe](_.persons)).maxBy(_.age), three)
+run(Mirra.all(personsL).minBy(_.age), three)
+run(Mirra.all(personsL).maxBy(_.age), three)
 ```
 
 ### `reduced`
@@ -219,7 +224,7 @@ run(Mirra.all(Focus[Universe](_.persons)).maxBy(_.age), three)
 Folds all elements using their `cats.Monoid` instance. Works naturally for strings, numbers, etc.
 
 ```scala mdoc
-run(Mirra.all(Focus[Universe](_.persons)).select(_.name).reduced, three)
+run(Mirra.all(personsL).select(_.name).reduced, three)
 ```
 
 ### `groupBy`
@@ -229,7 +234,7 @@ Partitions results into a `Map` keyed by the output of a function.
 ```scala mdoc
 val dave = Person(4, "Dave", 30)
 val four = Universe(List(alice, bob, carol, dave), Nil)
-run(Mirra.all(Focus[Universe](_.persons)).groupBy(_.age), four)
+run(Mirra.all(personsL).groupBy(_.age), four)
 ```
 
 ### `sortBy` / `sortByDesc`
@@ -237,8 +242,8 @@ run(Mirra.all(Focus[Universe](_.persons)).groupBy(_.age), four)
 Sorts results ascending or descending by a key. Requires a `cats.Order` instance for the key type, which `cats.implicits.*` provides for all primitives.
 
 ```scala mdoc
-run(Mirra.all(Focus[Universe](_.persons)).sortBy(_.age), three)
-run(Mirra.all(Focus[Universe](_.persons)).sortByDesc(_.age), three)
+run(Mirra.all(personsL).sortBy(_.age), three)
+run(Mirra.all(personsL).sortByDesc(_.age), three)
 ```
 
 ### `innerJoin` / `leftJoin` / `rightJoin`
@@ -250,8 +255,8 @@ val withOrders = Universe(List(alice, bob, carol), List(Order(1, 1, 100), Order(
 
 // inner join: only persons who have a matching order
 run(
-  Mirra.all(Focus[Universe](_.persons))
-    .innerJoin(Focus[Universe](_.orders))((p, o) => p.id == o.personId),
+  Mirra.all(personsL)
+    .innerJoin(ordersL)((p, o) => p.id == o.personId),
   withOrders
 )
 ```
@@ -259,8 +264,8 @@ run(
 ```scala mdoc
 // left join: all persons, paired with their order if one exists
 run(
-  Mirra.all(Focus[Universe](_.persons))
-    .leftJoin(Focus[Universe](_.orders))((p, o) => p.id == o.personId),
+  Mirra.all(personsL)
+    .leftJoin(ordersL)((p, o) => p.id == o.personId),
   withOrders
 )
 ```
@@ -268,8 +273,8 @@ run(
 ```scala mdoc
 // right join: all orders, paired with their person if one matches
 run(
-  Mirra.all(Focus[Universe](_.persons))
-    .rightJoin(Focus[Universe](_.orders))((p, o) => p.id == o.personId),
+  Mirra.all(personsL)
+    .rightJoin(ordersL)((p, o) => p.id == o.personId),
   withOrders
 )
 ```
@@ -281,7 +286,7 @@ run(
 ```scala mdoc
 // Page 2 of size 1, sorted by age ascending
 run(
-  Mirra.all(Focus[Universe](_.persons))
+  Mirra.all(personsL)
     .sortBy(_.age)
     .offset(1)
     .limit(1),
@@ -298,10 +303,10 @@ Because `Mirra[D, *]` is a `Monad`, you can sequence any number of operations in
 ```scala mdoc
 run(
   for {
-    _      <- Mirra.insertMany(Focus[Universe](_.persons))(List(alice, bob, carol))
-    _      <- Mirra.delete(Focus[Universe](_.persons))(_.age < 28)
-    _      <- Mirra.upsertWith(Focus[Universe](_.persons))(_.id, (ex, inc) => ex.copy(name = inc.name), Person(1, "Alicia", 0))
-    result <- Mirra.all(Focus[Universe](_.persons)).sortBy(_.age)
+    _      <- Mirra.insertMany(personsL)(List(alice, bob, carol))
+    _      <- Mirra.delete(personsL)(_.age < 28)
+    _      <- Mirra.upsertWith(personsL)(_.id, (ex, inc) => ex.copy(name = inc.name), Person(1, "Alicia", 0))
+    result <- Mirra.all(personsL).sortBy(_.age)
   } yield result
 )
 ```

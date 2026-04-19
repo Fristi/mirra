@@ -63,9 +63,6 @@ object Repositories {
 Each entity collection lives in the shared `Universe` state type. Add a field for every repository:
 
 ```scala mdoc
-import mirra.Mirra
-import monocle.Focus
-
 final case class Universe(
   persons: List[Person],
   organizations: List[Organization],
@@ -80,27 +77,10 @@ object Universe {
 
 Implement `Repositories[[A] =>> Mirra[Universe, A]]`. Each method returns an anonymous implementation of the corresponding sub-repository, targeting its own lens into `Universe`:
 
-```scala mdoc
+```scala
 object MirraRepositories extends Repositories[[A] =>> Mirra[Universe, A]] {
-  def persons: PersonRepository[[A] =>> Mirra[Universe, A]] =
-    new PersonRepository[[A] =>> Mirra[Universe, A]] {
-      def create: Mirra[Universe, Unit] =
-        Mirra.unit
-      def insertMany(ps: List[Person]): Mirra[Universe, Long] =
-        Mirra.insertMany(Focus[Universe](_.persons))(ps)
-      def listAll(): Mirra[Universe, List[Person]] =
-        Mirra.all(Focus[Universe](_.persons))
-    }
-
-  def organizations: OrganizationRepository[[A] =>> Mirra[Universe, A]] =
-    new OrganizationRepository[[A] =>> Mirra[Universe, A]] {
-      def create: Mirra[Universe, Unit] =
-        Mirra.unit
-      def insertMany(orgs: List[Organization]): Mirra[Universe, Long] =
-        Mirra.insertMany(Focus[Universe](_.organizations))(orgs)
-      def listAll(): Mirra[Universe, List[Organization]] =
-        Mirra.all(Focus[Universe](_.organizations))
-    }
+  def persons = MirraPersonRepository // object which implements the PersonRepository interface with Mirra
+  def organizations = MirraOrganizationRepository // object which implements the OrganizationRepository interface with Mirra
 }
 ```
 
