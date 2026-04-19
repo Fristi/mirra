@@ -67,6 +67,8 @@
   <ul class="nav-list">
     <li class="level1 nav-leaf"><a href="index.html">Mirra</a></li>
     <li class="level1 nav-leaf"><a href="getting-started.html">Getting Started</a></li>
+    <li class="level1 nav-leaf"><a href="combinators.html">Combinators Reference</a></li>
+    <li class="level1 nav-leaf"><a href="composing-repositories.html">Composing Repositories</a></li>
     <li class="level1 nav-leaf"><a href="doobie.html">Doobie</a></li>
     <li class="level1 active nav-leaf"><a href="#">Skunk</a></li>
     <li class="level1 nav-leaf"><a href="munit.html">munit + cats-effect</a></li>
@@ -94,42 +96,44 @@
 
         <h1 id="skunk" class="title">Skunk</h1>
         <p>The <code>skunk</code> module provides <code>SkunkSupport.rollbackTrans</code>, a natural transformation <code>Kleisli[F, Session[F], *] ~&gt; F</code> that runs each property-test iteration inside a Skunk session that is <strong>always rolled back</strong>.</p>
-        <p><code>scala
-libraryDependencies += &quot;io.github.fristi&quot; %% &quot;mirra-skunk&quot; % &quot;&lt;version&gt;&quot;</code></p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;io.github.fristi&quot;</span><span> %% </span><span class="string-literal">&quot;mirra-skunk&quot;</span><span> % </span><span class="string-literal">&quot;&lt;version&gt;&quot;</span></code></pre>
         
         <h2 id="implementation" class="section"><a class="anchor-link left" href="#implementation"><i class="icofont-laika link">&#xef71;</i></a>Implementation</h2>
         <p>The effect type is <code>Kleisli[F, Session[F], *]</code> — a function from a live Skunk session to an <code>F</code> action. All composed operations share the same session, so they run in the same transaction.</p>
-        <p>```scala
-        import cats.implicits._
-        import cats.data.Kleisli
-        import cats.effect.Async
-        import skunk._
-        import skunk.codec.all._
-        import skunk.data.Completion
-        import skunk.implicits._</p>
-        <p>class SkunkPersonRepository[F<span class="inline error"><span class="runtime-message error">unresolved link id reference: _</span><code>[_]</code></span>: Async] extends PersonRepository[<span class="inline error"><span class="runtime-message error">unresolved link id reference: a</span><code>[A]</code></span> =&gt;&gt; Kleisli[F, Session<span class="inline error"><span class="runtime-message error">unresolved link id reference: f</span><code>[F]</code></span>, A]] {
-          private val personCodec: Codec<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span> =
-            (uuid ~ text ~ int4).imap { case id ~ name ~ age =&gt; Person(id, name, age) }(p =&gt;
-              p.id ~ p.name ~ p.age)</p>
-        <p>def create: Kleisli[F, Session<span class="inline error"><span class="runtime-message error">unresolved link id reference: f</span><code>[F]</code></span>, Unit] =
-            Kleisli(_.execute(sql&quot;&quot;&quot;
-              CREATE TABLE IF NOT EXISTS persons (
-                id   uuid PRIMARY KEY,
-                name text NOT NULL,
-                age  int4 NOT NULL
-              )&quot;&quot;&quot;.command).void)</p>
-        <p>def insertMany(persons: List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>): Kleisli[F, Session<span class="inline error"><span class="runtime-message error">unresolved link id reference: f</span><code>[F]</code></span>, Long] = Kleisli { session =&gt;
-            session.prepareR(sql&quot;INSERT INTO persons (id, name, age) VALUES ($personCodec)&quot;.command)
-              .use(pc =&gt; persons.traverse(pc.execute).map(_.length.toLong))
-          }</p>
-        <p>def deleteWhenOlderThen(age: Long): Kleisli[F, Session<span class="inline error"><span class="runtime-message error">unresolved link id reference: f</span><code>[F]</code></span>, Long] = Kleisli { session =&gt;
-            session.prepareR(sql&quot;DELETE FROM persons WHERE age &gt; <span class="inline error"><span class="runtime-message error">Missing required reference: &#39;int8&#39;</span><code>${int8}</code></span>&quot;.command)
-              .use(_.execute(age).map { case Completion.Delete(n) =&gt; n.toLong; case _ =&gt; 0L })
-          }</p>
-        <p>def listAll(): Kleisli[F, Session<span class="inline error"><span class="runtime-message error">unresolved link id reference: f</span><code>[F]</code></span>, List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>] =
-            Kleisli(_.execute(sql&quot;SELECT id, name, age FROM persons&quot;.query(personCodec)))
-        }
-        ```</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">implicits</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">data</span><span>.</span><span class="type-name">Kleisli</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">Async</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">skunk</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">skunk</span><span>.</span><span class="identifier">codec</span><span>.</span><span class="identifier">all</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">skunk</span><span>.</span><span class="identifier">data</span><span>.</span><span class="type-name">Completion</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">skunk</span><span>.</span><span class="identifier">implicits</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">class</span><span> </span><span class="type-name">SkunkPersonRepository</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>] </span><span class="keyword">extends</span><span> </span><span class="type-name">PersonRepository</span><span>[[</span><span class="type-name">A</span><span>] =&gt;&gt; </span><span class="type-name">Kleisli</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">Session</span><span>[</span><span class="type-name">F</span><span>], </span><span class="type-name">A</span><span>]] {
+  </span><span class="keyword">private</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">personCodec</span><span>: </span><span class="type-name">Codec</span><span>[</span><span class="type-name">Person</span><span>] =
+    (</span><span class="identifier">uuid</span><span> ~ </span><span class="identifier">text</span><span> ~ </span><span class="identifier">int4</span><span>).</span><span class="identifier">imap</span><span> { </span><span class="keyword">case</span><span> </span><span class="identifier">id</span><span> ~ </span><span class="identifier">name</span><span> ~ </span><span class="identifier">age</span><span> =&gt; </span><span class="type-name">Person</span><span>(</span><span class="identifier">id</span><span>, </span><span class="identifier">name</span><span>, </span><span class="identifier">age</span><span>) }(</span><span class="identifier">p</span><span> =&gt;
+      </span><span class="identifier">p</span><span>.</span><span class="identifier">id</span><span> ~ </span><span class="identifier">p</span><span>.</span><span class="identifier">name</span><span> ~ </span><span class="identifier">p</span><span>.</span><span class="identifier">age</span><span>)
+
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">create</span><span>: </span><span class="type-name">Kleisli</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">Session</span><span>[</span><span class="type-name">F</span><span>], </span><span class="type-name">Unit</span><span>] =
+    </span><span class="type-name">Kleisli</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">execute</span><span>(</span><span class="string-literal">sql&quot;&quot;&quot;
+      CREATE TABLE IF NOT EXISTS persons (
+        id   uuid PRIMARY KEY,
+        name text NOT NULL,
+        age  int4 NOT NULL
+      )&quot;&quot;&quot;</span><span>.</span><span class="identifier">command</span><span>).</span><span class="identifier">void</span><span>)
+
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">insertMany</span><span>(</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>]): </span><span class="type-name">Kleisli</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">Session</span><span>[</span><span class="type-name">F</span><span>], </span><span class="type-name">Long</span><span>] = </span><span class="type-name">Kleisli</span><span> { </span><span class="identifier">session</span><span> =&gt;
+    </span><span class="identifier">session</span><span>.</span><span class="identifier">prepareR</span><span>(</span><span class="string-literal">sql&quot;INSERT INTO persons (id, name, age) VALUES (</span><span class="substitution">$personCodec</span><span class="string-literal">)&quot;</span><span>.</span><span class="identifier">command</span><span>)
+      .</span><span class="identifier">use</span><span>(</span><span class="identifier">pc</span><span> =&gt; </span><span class="identifier">persons</span><span>.</span><span class="identifier">traverse</span><span>(</span><span class="identifier">pc</span><span>.</span><span class="identifier">execute</span><span>).</span><span class="identifier">map</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">length</span><span>.</span><span class="identifier">toLong</span><span>))
+  }
+
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">deleteWhenOlderThen</span><span>(</span><span class="identifier">age</span><span>: </span><span class="type-name">Long</span><span>): </span><span class="type-name">Kleisli</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">Session</span><span>[</span><span class="type-name">F</span><span>], </span><span class="type-name">Long</span><span>] = </span><span class="type-name">Kleisli</span><span> { </span><span class="identifier">session</span><span> =&gt;
+    </span><span class="identifier">session</span><span>.</span><span class="identifier">prepareR</span><span>(</span><span class="string-literal">sql&quot;DELETE FROM persons WHERE age &gt; </span><span class="substitution">${int8}</span><span class="string-literal">&quot;</span><span>.</span><span class="identifier">command</span><span>)
+      .</span><span class="identifier">use</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">execute</span><span>(</span><span class="identifier">age</span><span>).</span><span class="identifier">map</span><span> { </span><span class="keyword">case</span><span> </span><span class="type-name">Completion</span><span>.</span><span class="type-name">Delete</span><span>(</span><span class="identifier">n</span><span>) =&gt; </span><span class="identifier">n</span><span>.</span><span class="identifier">toLong</span><span>; </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="number-literal">0L</span><span> })
+  }
+
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">listAll</span><span>(): </span><span class="type-name">Kleisli</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">Session</span><span>[</span><span class="type-name">F</span><span>], </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>]] =
+    </span><span class="type-name">Kleisli</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">execute</span><span>(</span><span class="string-literal">sql&quot;SELECT id, name, age FROM persons&quot;</span><span>.</span><span class="identifier">query</span><span>(</span><span class="identifier">personCodec</span><span>)))
+}</span></code></pre>
         
         <h2 id="rollback-session" class="section"><a class="anchor-link left" href="#rollback-session"><i class="icofont-laika link">&#xef71;</i></a>Rollback session</h2>
         <p><code>SkunkSupport.rollbackTrans</code> acquires a Skunk session and wraps it in a <code>Kleisli ~&gt; F</code> that always rolls back on completion. Pass it as the <code>tx</code> argument to <code>SystemUnderTest</code> in your test suite.</p>

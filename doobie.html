@@ -67,6 +67,8 @@
   <ul class="nav-list">
     <li class="level1 nav-leaf"><a href="index.html">Mirra</a></li>
     <li class="level1 nav-leaf"><a href="getting-started.html">Getting Started</a></li>
+    <li class="level1 nav-leaf"><a href="combinators.html">Combinators Reference</a></li>
+    <li class="level1 nav-leaf"><a href="composing-repositories.html">Composing Repositories</a></li>
     <li class="level1 active nav-leaf"><a href="#">Doobie</a></li>
     <li class="level1 nav-leaf"><a href="skunk.html">Skunk</a></li>
     <li class="level1 nav-leaf"><a href="munit.html">munit + cats-effect</a></li>
@@ -94,43 +96,43 @@
 
         <h1 id="doobie" class="title">Doobie</h1>
         <p>The <code>doobie</code> module provides <code>DoobieSupport.rollbackTrans</code>, a natural transformation <code>ConnectionIO ~&gt; F</code> that runs each property-test iteration inside a transaction that is <strong>always rolled back</strong>. This keeps the database clean between iterations without restarting the container.</p>
-        <p><code>scala
-libraryDependencies += &quot;io.github.fristi&quot; %% &quot;mirra-doobie&quot; % &quot;&lt;version&gt;&quot;</code></p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;io.github.fristi&quot;</span><span> %% </span><span class="string-literal">&quot;mirra-doobie&quot;</span><span> % </span><span class="string-literal">&quot;&lt;version&gt;&quot;</span></code></pre>
         
         <h2 id="implementation" class="section"><a class="anchor-link left" href="#implementation"><i class="icofont-laika link">&#xef71;</i></a>Implementation</h2>
         <p>The effect type is <code>ConnectionIO</code> — Doobie&#39;s own connection action type. Implement your algebra against it as you normally would:</p>
-        <p>```scala
-        import cats.implicits._
-        import doobie._
-        import doobie.implicits._
-        import doobie.postgres.implicits._</p>
-        <p>object DoobiePersonRepository extends PersonRepository<span class="inline error"><span class="runtime-message error">unresolved link id reference: connectionio</span><code>[ConnectionIO]</code></span> {
-          def create: ConnectionIO<span class="inline error"><span class="runtime-message error">unresolved link id reference: unit</span><code>[Unit]</code></span> =
-            fr&quot;&quot;&quot;create table if not exists persons (
-              |  id uuid primary key,
-              |  name varchar(50) not null,
-              |  age numeric not null
-              |)&quot;&quot;&quot;.stripMargin.update.run.void</p>
-        <p>def insertMany(persons: List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>): ConnectionIO<span class="inline error"><span class="runtime-message error">unresolved link id reference: long</span><code>[Long]</code></span> =
-            Update<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>(&quot;insert into persons (id, name, age) values (?, ?, ?)&quot;)
-              .updateMany(persons).map(_.toLong)</p>
-        <p>def deleteWhenOlderThen(age: Long): ConnectionIO<span class="inline error"><span class="runtime-message error">unresolved link id reference: long</span><code>[Long]</code></span> =
-            fr&quot;delete from persons where age &gt; $age&quot;.update.run.map(_.toLong)</p>
-        <p>def listAll(): ConnectionIO[List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>] =
-            fr&quot;select id, name, age from persons&quot;.query<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>.to<span class="inline error"><span class="runtime-message error">unresolved link id reference: list</span><code>[List]</code></span>
-        }
-        ```</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">implicits</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">doobie</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">doobie</span><span>.</span><span class="identifier">implicits</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">doobie</span><span>.</span><span class="identifier">postgres</span><span>.</span><span class="identifier">implicits</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">object</span><span> </span><span class="type-name">DoobiePersonRepository</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">PersonRepository</span><span>[</span><span class="type-name">ConnectionIO</span><span>] {
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">create</span><span>: </span><span class="type-name">ConnectionIO</span><span>[</span><span class="type-name">Unit</span><span>] =
+    </span><span class="string-literal">fr&quot;&quot;&quot;create table if not exists persons (
+      |  id uuid primary key,
+      |  name varchar(50) not null,
+      |  age numeric not null
+      |)&quot;&quot;&quot;</span><span>.</span><span class="identifier">stripMargin</span><span>.</span><span class="identifier">update</span><span>.</span><span class="identifier">run</span><span>.</span><span class="identifier">void</span><span>
+
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">insertMany</span><span>(</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>]): </span><span class="type-name">ConnectionIO</span><span>[</span><span class="type-name">Long</span><span>] =
+    </span><span class="type-name">Update</span><span>[</span><span class="type-name">Person</span><span>](</span><span class="string-literal">&quot;insert into persons (id, name, age) values (?, ?, ?)&quot;</span><span>)
+      .</span><span class="identifier">updateMany</span><span>(</span><span class="identifier">persons</span><span>).</span><span class="identifier">map</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">toLong</span><span>)
+
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">deleteWhenOlderThen</span><span>(</span><span class="identifier">age</span><span>: </span><span class="type-name">Long</span><span>): </span><span class="type-name">ConnectionIO</span><span>[</span><span class="type-name">Long</span><span>] =
+    </span><span class="string-literal">fr&quot;delete from persons where age &gt; </span><span class="substitution">$age</span><span class="string-literal">&quot;</span><span>.</span><span class="identifier">update</span><span>.</span><span class="identifier">run</span><span>.</span><span class="identifier">map</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">toLong</span><span>)
+
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">listAll</span><span>(): </span><span class="type-name">ConnectionIO</span><span>[</span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>]] =
+    </span><span class="string-literal">fr&quot;select id, name, age from persons&quot;</span><span>.</span><span class="identifier">query</span><span>[</span><span class="type-name">Person</span><span>].</span><span class="identifier">to</span><span>[</span><span class="type-name">List</span><span>]
+}</span></code></pre>
         
         <h2 id="rollback-transactor" class="section"><a class="anchor-link left" href="#rollback-transactor"><i class="icofont-laika link">&#xef71;</i></a>Rollback transactor</h2>
         <p><code>DoobieSupport.rollbackTrans</code> builds a <code>Transactor</code> whose strategy always rolls back, regardless of success or failure. Pass it as the <code>tx</code> argument to <code>SystemUnderTest</code>:</p>
-        <p><code>scala
-DoobieSupport.rollbackTrans[IO](
-  driver   = &quot;org.postgresql.Driver&quot;,
-  jdbcUrl  = container.jdbcUrl,
-  username = container.username,
-  password = container.password,
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="type-name">DoobieSupport</span><span>.</span><span class="identifier">rollbackTrans</span><span>[</span><span class="type-name">IO</span><span>](
+  </span><span class="identifier">driver</span><span>   = </span><span class="string-literal">&quot;org.postgresql.Driver&quot;</span><span>,
+  </span><span class="identifier">jdbcUrl</span><span>  = </span><span class="identifier">container</span><span>.</span><span class="identifier">jdbcUrl</span><span>,
+  </span><span class="identifier">username</span><span> = </span><span class="identifier">container</span><span>.</span><span class="identifier">username</span><span>,
+  </span><span class="identifier">password</span><span> = </span><span class="identifier">container</span><span>.</span><span class="identifier">password</span><span>,
 )
-// res: ConnectionIO ~&gt; IO</code></p>
+</span><span class="comment">// res: ConnectionIO ~&gt; IO</span></code></pre>
         <p>See <a href="munit.html">munit</a> or <a href="zio-test.html">ZIO Test</a> for full wiring examples.</p>
 
         

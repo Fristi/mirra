@@ -67,6 +67,8 @@
   <ul class="nav-list">
     <li class="level1 nav-leaf"><a href="index.html">Mirra</a></li>
     <li class="level1 active nav-leaf"><a href="#">Getting Started</a></li>
+    <li class="level1 nav-leaf"><a href="combinators.html">Combinators Reference</a></li>
+    <li class="level1 nav-leaf"><a href="composing-repositories.html">Composing Repositories</a></li>
     <li class="level1 nav-leaf"><a href="doobie.html">Doobie</a></li>
     <li class="level1 nav-leaf"><a href="skunk.html">Skunk</a></li>
     <li class="level1 nav-leaf"><a href="munit.html">munit + cats-effect</a></li>
@@ -98,46 +100,55 @@
         
         <h2 id="_1-define-the-algebra" class="section"><a class="anchor-link left" href="#_1-define-the-algebra"><i class="icofont-laika link">&#xef71;</i></a>1. Define the algebra</h2>
         <p>Start with a tagless final algebra for your repository. The algebra needs <code>FunctorK</code> and <code>SemigroupalK</code> instances so that <code>SystemUnderTest</code> can run a single program through both interpreters simultaneously. cats-tagless can derive them automatically.</p>
-        <p>```scala
-        import cats.tagless.{Derive, FunctorK, SemigroupalK}
-        import java.util.UUID</p>
-        <p>final case class Person(id: UUID, name: String, age: Int)</p>
-        <p>trait PersonRepository[F<span class="inline error"><span class="runtime-message error">unresolved link id reference: _</span><code>[_]</code></span>] {
-          def create: F<span class="inline error"><span class="runtime-message error">unresolved link id reference: unit</span><code>[Unit]</code></span>
-          def insertMany(persons: List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>): F<span class="inline error"><span class="runtime-message error">unresolved link id reference: long</span><code>[Long]</code></span>
-          def deleteWhenOlderThen(age: Long): F<span class="inline error"><span class="runtime-message error">unresolved link id reference: long</span><code>[Long]</code></span>
-          def listAll(): F[List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>]
-        }</p>
-        <p>object PersonRepository {
-          implicit val functorK: FunctorK<span class="inline error"><span class="runtime-message error">unresolved link id reference: personrepository</span><code>[PersonRepository]</code></span>     = Derive.functorK
-          implicit val semigroupalK: SemigroupalK<span class="inline error"><span class="runtime-message error">unresolved link id reference: personrepository</span><code>[PersonRepository]</code></span> = Derive.semigroupalK
-        }
-        ```</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">tagless</span><span>.{</span><span class="type-name">Derive</span><span>, </span><span class="type-name">FunctorK</span><span>, </span><span class="type-name">SemigroupalK</span><span>}
+</span><span class="keyword">import</span><span> </span><span class="identifier">java</span><span>.</span><span class="identifier">util</span><span>.</span><span class="type-name">UUID</span><span>
+
+</span><span class="keyword">final</span><span> </span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Person</span><span>(</span><span class="identifier">id</span><span>: </span><span class="type-name">UUID</span><span>, </span><span class="identifier">name</span><span>: </span><span class="type-name">String</span><span>, </span><span class="identifier">age</span><span>: </span><span class="type-name">Int</span><span>)
+
+</span><span class="keyword">trait</span><span> </span><span class="type-name">PersonRepository</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]] {
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">create</span><span>: </span><span class="type-name">F</span><span>[</span><span class="type-name">Unit</span><span>]
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">insertMany</span><span>(</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>]): </span><span class="type-name">F</span><span>[</span><span class="type-name">Long</span><span>]
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">deleteWhenOlderThen</span><span>(</span><span class="identifier">age</span><span>: </span><span class="type-name">Long</span><span>): </span><span class="type-name">F</span><span>[</span><span class="type-name">Long</span><span>]
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">listAll</span><span>(): </span><span class="type-name">F</span><span>[</span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>]]
+}
+
+</span><span class="keyword">object</span><span> </span><span class="type-name">PersonRepository</span><span> {
+  </span><span class="identifier">given</span><span> </span><span class="type-name">FunctorK</span><span>[</span><span class="type-name">PersonRepository</span><span>]    = </span><span class="type-name">Derive</span><span>.</span><span class="identifier">functorK</span><span>
+  </span><span class="identifier">given</span><span> </span><span class="type-name">SemigroupalK</span><span>[</span><span class="type-name">PersonRepository</span><span>] = </span><span class="type-name">Derive</span><span>.</span><span class="identifier">semigroupalK</span><span>
+}</span></code></pre>
         
         <h2 id="_2-write-the-in-memory-model" class="section"><a class="anchor-link left" href="#_2-write-the-in-memory-model"><i class="icofont-laika link">&#xef71;</i></a>2. Write the in-memory model</h2>
         <p>Define a &quot;universe&quot; — a case class holding the state — and implement the algebra using Mirra&#39;s CRUD helpers with Monocle <code>Focus</code> lenses. This model is the single source of truth for expected behavior. It&#39;s so simple (append to a list, filter a list, return a list) that it&#39;s hard to get wrong.</p>
-        <p>```scala
-        import mirra.Mirra
-        import monocle.Focus</p>
-        <p>final case class Universe(persons: List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>)</p>
-        <p>object Universe {
-          def zero: Universe = Universe(Nil)
-        }</p>
-        <p>object MirraPersonRepository extends PersonRepository[<span class="inline error"><span class="runtime-message error">unresolved link id reference: a</span><code>[A]</code></span> =&gt;&gt; Mirra<span class="inline error"><span class="runtime-message error">unresolved link id reference: universe, a</span><code>[Universe, A]</code></span>] {
-          def create: Mirra<span class="inline error"><span class="runtime-message error">unresolved link id reference: universe, unit</span><code>[Universe, Unit]</code></span> =
-            Mirra.unit</p>
-        <p>def insertMany(persons: List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>): Mirra<span class="inline error"><span class="runtime-message error">unresolved link id reference: universe, long</span><code>[Universe, Long]</code></span> =
-            Mirra.insertMany(Focus<span class="inline error"><span class="runtime-message error">unresolved internal reference: _.persons</span><code>[Universe](_.persons)</code></span>)(persons)</p>
-        <p>def deleteWhenOlderThen(age: Long): Mirra<span class="inline error"><span class="runtime-message error">unresolved link id reference: universe, long</span><code>[Universe, Long]</code></span> =
-            Mirra.delete(Focus<span class="inline error"><span class="runtime-message error">unresolved internal reference: _.persons</span><code>[Universe](_.persons)</code></span>)(_.age &gt; age)</p>
-        <p>def listAll(): Mirra[Universe, List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>] =
-            Mirra.all(Focus<span class="inline error"><span class="runtime-message error">unresolved internal reference: _.persons</span><code>[Universe](_.persons)</code></span>)
-        }
-        ```</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">mirra</span><span>.</span><span class="type-name">Mirra</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">monocle</span><span>.</span><span class="type-name">Focus</span><span>
+
+</span><span class="keyword">final</span><span> </span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Universe</span><span>(</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>])
+
+</span><span class="keyword">object</span><span> </span><span class="type-name">Universe</span><span> {
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">zero</span><span>: </span><span class="type-name">Universe</span><span> = </span><span class="type-name">Universe</span><span>(</span><span class="type-name">Nil</span><span>)
+  
+  </span><span class="keyword">val</span><span> </span><span class="identifier">personsL</span><span> = </span><span class="type-name">Focus</span><span>[</span><span class="type-name">Universe</span><span>](</span><span class="identifier">_</span><span>.</span><span class="identifier">persons</span><span>)
+}
+
+</span><span class="keyword">object</span><span> </span><span class="type-name">MirraPersonRepository</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">PersonRepository</span><span>[[</span><span class="type-name">A</span><span>] =&gt;&gt; </span><span class="type-name">Mirra</span><span>[</span><span class="type-name">Universe</span><span>, </span><span class="type-name">A</span><span>]] {
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">create</span><span>: </span><span class="type-name">Mirra</span><span>[</span><span class="type-name">Universe</span><span>, </span><span class="type-name">Unit</span><span>] =
+    </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">unit</span><span>
+
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">insertMany</span><span>(</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>]): </span><span class="type-name">Mirra</span><span>[</span><span class="type-name">Universe</span><span>, </span><span class="type-name">Long</span><span>] =
+    </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">insertMany</span><span>(</span><span class="type-name">Universe</span><span>.</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">persons</span><span>)
+
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">deleteWhenOlderThen</span><span>(</span><span class="identifier">age</span><span>: </span><span class="type-name">Long</span><span>): </span><span class="type-name">Mirra</span><span>[</span><span class="type-name">Universe</span><span>, </span><span class="type-name">Long</span><span>] =
+    </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">delete</span><span>(</span><span class="type-name">Universe</span><span>.</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span> &gt; </span><span class="identifier">age</span><span>)
+
+  </span><span class="keyword">def</span><span> </span><span class="declaration-name">listAll</span><span>(): </span><span class="type-name">Mirra</span><span>[</span><span class="type-name">Universe</span><span>, </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>]] =
+    </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="type-name">Universe</span><span>.</span><span class="identifier">personsL</span><span>)
+}</span></code></pre>
         
         <h2 id="next-steps" class="section"><a class="anchor-link left" href="#next-steps"><i class="icofont-laika link">&#xef71;</i></a>Next steps</h2>
         <p>With the algebra and model in place, wire in a real database backend and a test framework integration:</p>
         <ul>
+          <li><a href="combinators.html">Combinators reference</a> — every <code>Mirra</code> operator and <code>MirraSyntax</code> extension with examples</li>
+          <li><a href="composing-repositories.html">Composing repositories</a> — test multiple repositories together in a single <code>SystemUnderTest</code></li>
           <li><a href="doobie.html">Doobie</a> — <code>ConnectionIO</code>-based backend + munit example</li>
           <li><a href="skunk.html">Skunk</a> — <code>Kleisli[F, Session[F], *]</code>-based backend</li>
           <li><a href="munit.html">munit + cats-effect</a> — property-test with <code>MirraSuite</code></li>

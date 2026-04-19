@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+  <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Typelevel Laika + Helium Theme" />
+  <title>Combinators Reference</title>
+  
+  
+  <meta name="description" content="docs"/>
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono:500">
+  
+  <link rel="stylesheet" type="text/css" href="helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="helium/site/laika-helium.css" />
+  <script src="helium/site/laika-helium.js"></script>
+  
+  
+  <script> /* for avoiding page load transitions */ </script>
+</head>
+
+  <body>
+
+    <header id="top-bar" class="light-default dark-default">
+
+  <div class="row">
+    <a id="nav-icon">
+      <i class="icofont-laika navigationMenu" title="Navigation">&#xefa2;</i>
+    </a>
+    
+    
+  </div>
+
+  <a class="icon-link glyph-link" href="index.html"><i class="icofont-laika home" title="Home">&#xef47;</i></a>
+
+  <div class="row links">
+    
+    <a class="icon-link svg-link" href="https://github.com/Fristi/mirra"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+  </div>  
+
+</header>
+    
+    <nav id="sidebar">
+
+  <div class="row">
+    
+    <a class="icon-link svg-link" href="https://github.com/Fristi/mirra"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+  </div>
+
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="index.html">Mirra</a></li>
+    <li class="level1 nav-leaf"><a href="getting-started.html">Getting Started</a></li>
+    <li class="level1 active nav-leaf"><a href="#">Combinators Reference</a></li>
+    <li class="level1 nav-leaf"><a href="composing-repositories.html">Composing Repositories</a></li>
+    <li class="level1 nav-leaf"><a href="doobie.html">Doobie</a></li>
+    <li class="level1 nav-leaf"><a href="skunk.html">Skunk</a></li>
+    <li class="level1 nav-leaf"><a href="munit.html">munit + cats-effect</a></li>
+    <li class="level1 nav-leaf"><a href="zio-test.html">ZIO Test</a></li>
+  </ul>
+
+</nav>
+
+    <div id="container">
+
+      
+<nav id="page-nav">
+  <p class="header"><a href="#">Combinators Reference</a></p>
+
+  <ul class="nav-list">
+    <li class="level1 nav-node"><a href="#state-operations">State operations</a></li>
+    <li class="level2 nav-leaf"><a href="#unit-and-succeed"><code>unit</code> and <code>succeed</code></a></li>
+    <li class="level2 nav-leaf"><a href="#all"><code>all</code></a></li>
+    <li class="level2 nav-leaf"><a href="#insert-insertmany-insertmany_"><code>insert</code> / <code>insertMany</code> / <code>insertMany_</code></a></li>
+    <li class="level2 nav-leaf"><a href="#update-update_"><code>update</code> / <code>update_</code></a></li>
+    <li class="level2 nav-leaf"><a href="#delete-delete_"><code>delete</code> / <code>delete_</code></a></li>
+    <li class="level2 nav-leaf"><a href="#truncate"><code>truncate</code></a></li>
+    <li class="level2 nav-leaf"><a href="#upsert-upsertmany"><code>upsert</code> / <code>upsertMany</code></a></li>
+    <li class="level2 nav-leaf"><a href="#upsertwith-upsertmanywith"><code>upsertWith</code> / <code>upsertManyWith</code></a></li>
+    <li class="level1 nav-node"><a href="#query-syntax">Query syntax</a></li>
+    <li class="level2 nav-leaf"><a href="#filter"><code>filter</code></a></li>
+    <li class="level2 nav-leaf"><a href="#collect"><code>collect</code></a></li>
+    <li class="level2 nav-leaf"><a href="#headoption"><code>headOption</code></a></li>
+    <li class="level2 nav-leaf"><a href="#select"><code>select</code></a></li>
+    <li class="level2 nav-leaf"><a href="#size"><code>size</code></a></li>
+    <li class="level2 nav-leaf"><a href="#sumby"><code>sumBy</code></a></li>
+    <li class="level2 nav-leaf"><a href="#minby-maxby"><code>minBy</code> / <code>maxBy</code></a></li>
+    <li class="level2 nav-leaf"><a href="#reduced"><code>reduced</code></a></li>
+    <li class="level2 nav-leaf"><a href="#groupby"><code>groupBy</code></a></li>
+    <li class="level2 nav-leaf"><a href="#sortby-sortbydesc"><code>sortBy</code> / <code>sortByDesc</code></a></li>
+    <li class="level2 nav-leaf"><a href="#innerjoin-leftjoin-rightjoin"><code>innerJoin</code> / <code>leftJoin</code> / <code>rightJoin</code></a></li>
+    <li class="level2 nav-leaf"><a href="#limit-offset"><code>limit</code> / <code>offset</code></a></li>
+    <li class="level1 nav-leaf"><a href="#combining-operations">Combining operations</a></li>
+  </ul>
+
+  <p class="footer"></p>
+</nav>
+
+
+      <main class="content">
+
+        <h1 id="combinators-reference" class="title">Combinators Reference</h1>
+        <p><code>Mirra</code> provides two complementary layers:</p>
+        <ul>
+          <li><strong>State operations</strong> (<code>Mirra</code> companion object) — modify in-memory state: insert, update, delete, upsert, etc.</li>
+          <li><strong>Query syntax</strong> (<code>MirraSyntax</code>) — transform and aggregate the <em>result</em> of a <code>Mirra[D, List[A]]</code> program: filter, sort, join, paginate.</li>
+        </ul>
+        <p>All state operations take a Monocle <code>Lens</code> that targets the collection to operate on. Query syntax methods are extension methods on <code>Mirra[D, F[A]]</code> — mix <code>MirraSyntax</code> into your suite or import it:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">class</span><span> </span><span class="type-name">MySpec</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">MirraSuite</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">MyAlg</span><span>] </span><span class="keyword">with</span><span> </span><span class="type-name">MirraSyntax</span><span> { ... }</span></code></pre>
+        <hr>
+        <p>Some basics!</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">implicits</span><span>.*
+</span><span class="keyword">import</span><span> </span><span class="identifier">mirra</span><span>.*
+</span><span class="keyword">import</span><span> </span><span class="identifier">monocle</span><span>.</span><span class="type-name">Focus</span><span>
+
+</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Person</span><span>(</span><span class="identifier">id</span><span>: </span><span class="type-name">Int</span><span>, </span><span class="identifier">name</span><span>: </span><span class="type-name">String</span><span>, </span><span class="identifier">age</span><span>: </span><span class="type-name">Int</span><span>)
+</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Order</span><span>(</span><span class="identifier">id</span><span>: </span><span class="type-name">Int</span><span>, </span><span class="identifier">personId</span><span>: </span><span class="type-name">Int</span><span>, </span><span class="identifier">amount</span><span>: </span><span class="type-name">Int</span><span>)
+</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Universe</span><span>(</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>], </span><span class="identifier">orders</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Order</span><span>])
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">personsL</span><span> = </span><span class="type-name">Focus</span><span>[</span><span class="type-name">Universe</span><span>](</span><span class="identifier">_</span><span>.</span><span class="identifier">persons</span><span>)
+</span><span class="comment">// personsL: PLens[Universe, Universe, List[Person], List[Person]] = monocle.PLens$$anon$2@52457301
+</span><span class="keyword">val</span><span> </span><span class="identifier">ordersL</span><span> = </span><span class="type-name">Focus</span><span>[</span><span class="type-name">Universe</span><span>](</span><span class="identifier">_</span><span>.</span><span class="identifier">orders</span><span>)
+</span><span class="comment">// ordersL: PLens[Universe, Universe, List[Order], List[Order]] = monocle.PLens$$anon$2@4ec17b7
+</span><span>
+</span><span class="keyword">object</span><span> </span><span class="type-name">Universe</span><span>:
+  </span><span class="keyword">val</span><span> </span><span class="identifier">zero</span><span>: </span><span class="type-name">Universe</span><span> = </span><span class="type-name">Universe</span><span>(</span><span class="type-name">Nil</span><span>, </span><span class="type-name">Nil</span><span>)
+
+</span><span class="keyword">def</span><span> </span><span class="declaration-name">run</span><span>[</span><span class="type-name">A</span><span>](</span><span class="identifier">prog</span><span>: </span><span class="type-name">Mirra</span><span>[</span><span class="type-name">Universe</span><span>, </span><span class="type-name">A</span><span>], </span><span class="identifier">state</span><span>: </span><span class="type-name">Universe</span><span> = </span><span class="type-name">Universe</span><span>.</span><span class="identifier">zero</span><span>): </span><span class="type-name">A</span><span> = </span><span class="identifier">prog</span><span>.</span><span class="identifier">run</span><span>(</span><span class="identifier">state</span><span>)
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">alice</span><span> = </span><span class="type-name">Person</span><span>(</span><span class="number-literal">1</span><span>, </span><span class="string-literal">&quot;Alice&quot;</span><span>, </span><span class="number-literal">30</span><span>)
+</span><span class="comment">// alice: Person = Person(id = 1, name = &quot;Alice&quot;, age = 30)
+</span><span class="keyword">val</span><span> </span><span class="identifier">bob</span><span>   = </span><span class="type-name">Person</span><span>(</span><span class="number-literal">2</span><span>, </span><span class="string-literal">&quot;Bob&quot;</span><span>,   </span><span class="number-literal">25</span><span>)
+</span><span class="comment">// bob: Person = Person(id = 2, name = &quot;Bob&quot;, age = 25)
+</span><span class="keyword">val</span><span> </span><span class="identifier">carol</span><span> = </span><span class="type-name">Person</span><span>(</span><span class="number-literal">3</span><span>, </span><span class="string-literal">&quot;Carol&quot;</span><span>, </span><span class="number-literal">35</span><span>)
+</span><span class="comment">// carol: Person = Person(id = 3, name = &quot;Carol&quot;, age = 35)
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">three</span><span> = </span><span class="type-name">Universe</span><span>(</span><span class="type-name">List</span><span>(</span><span class="identifier">alice</span><span>, </span><span class="identifier">bob</span><span>, </span><span class="identifier">carol</span><span>), </span><span class="type-name">Nil</span><span>)
+</span><span class="comment">// three: Universe = Universe(
+//   persons = List(
+//     Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//     Person(id = 2, name = &quot;Bob&quot;, age = 25),
+//     Person(id = 3, name = &quot;Carol&quot;, age = 35)
+//   ),
+//   orders = List()
+// )</span></code></pre>
+        
+        <h2 id="state-operations" class="section"><a class="anchor-link left" href="#state-operations"><i class="icofont-laika link">&#xef71;</i></a>State operations</h2>
+        
+        <h3 id="unit-and-succeed" class="section"><a class="anchor-link left" href="#unit-and-succeed"><i class="icofont-laika link">&#xef71;</i></a><code>unit</code> and <code>succeed</code></h3>
+        <p><code>unit</code> produces <code>Unit</code> without touching state — useful to model a no-op such as a schema-creation step that is meaningless in memory. <code>succeed</code> lifts any pure value.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">unit</span><span>[</span><span class="type-name">Universe</span><span>])
+</span><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">succeed</span><span>[</span><span class="type-name">Universe</span><span>, </span><span class="type-name">String</span><span>](</span><span class="string-literal">&quot;hello&quot;</span><span>))
+</span><span class="comment">// res1: String = &quot;hello&quot;</span></code></pre>
+        
+        <h3 id="all" class="section"><a class="anchor-link left" href="#all"><i class="icofont-laika link">&#xef71;</i></a><code>all</code></h3>
+        <p>Returns every element of the targeted collection without modifying state.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>), </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res2: List[Person] = List(
+//   Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//   Person(id = 2, name = &quot;Bob&quot;, age = 25),
+//   Person(id = 3, name = &quot;Carol&quot;, age = 35)
+// )</span></code></pre>
+        
+        <h3 id="insert-insertmany-insertmany_" class="section"><a class="anchor-link left" href="#insert-insertmany-insertmany_"><i class="icofont-laika link">&#xef71;</i></a><code>insert</code> / <code>insertMany</code> / <code>insertMany_</code></h3>
+        <p><code>insert</code> appends one element; <code>insertMany</code> appends a list. Both return the number of rows inserted as <code>Long</code>. The <code>_</code> suffix variant returns the inserted elements instead of the count.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">insert</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">alice</span><span>))
+</span><span class="comment">// res3: Long = 1L
+</span><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">insertMany</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="type-name">List</span><span>(</span><span class="identifier">alice</span><span>, </span><span class="identifier">bob</span><span>)))
+</span><span class="comment">// res4: Long = 2L
+</span><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">insertMany_</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="type-name">List</span><span>(</span><span class="identifier">alice</span><span>, </span><span class="identifier">bob</span><span>)))
+</span><span class="comment">// res5: List[Person] = List(
+//   Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//   Person(id = 2, name = &quot;Bob&quot;, age = 25)
+// )</span></code></pre>
+        <p>State accumulates across steps in a <code>for</code>-comprehension:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(
+  </span><span class="keyword">for</span><span> {
+    </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">insert</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">alice</span><span>)
+    </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">insert</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">bob</span><span>)
+    </span><span class="identifier">r</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>)
+  } </span><span class="keyword">yield</span><span> </span><span class="identifier">r</span><span>
+)
+</span><span class="comment">// res6: List[Person] = List(
+//   Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//   Person(id = 2, name = &quot;Bob&quot;, age = 25)
+// )</span></code></pre>
+        
+        <h3 id="update-update_" class="section"><a class="anchor-link left" href="#update-update_"><i class="icofont-laika link">&#xef71;</i></a><code>update</code> / <code>update_</code></h3>
+        <p><code>update(lens)(filter, transform)</code> applies <code>transform</code> to every element satisfying <code>filter</code> and returns the count of affected rows. <code>update_</code> returns the <strong>pre-transformation</strong> elements instead.</p>
+        <pre><code class="nohighlight"><span class="identifier">run</span><span>(
+  </span><span class="keyword">for</span><span> {
+    </span><span class="identifier">n</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">update</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span> &gt; </span><span class="number-literal">28</span><span>, </span><span class="identifier">_</span><span>.</span><span class="identifier">copy</span><span>(</span><span class="identifier">age</span><span> = </span><span class="number-literal">99</span><span>))
+    </span><span class="identifier">r</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>)
+  } </span><span class="keyword">yield</span><span> (</span><span class="identifier">n</span><span>, </span><span class="identifier">r</span><span>),
+  </span><span class="identifier">three</span><span>
+)
+</span><span class="comment">// res7: Tuple2[Long, List[Person]] = (
+//   2L,
+//   List(
+//     Person(id = 1, name = &quot;Alice&quot;, age = 99),
+//     Person(id = 3, name = &quot;Carol&quot;, age = 99),
+//     Person(id = 2, name = &quot;Bob&quot;, age = 25)
+//   )
+// )</span></code></pre>
+        
+        <h3 id="delete-delete_" class="section"><a class="anchor-link left" href="#delete-delete_"><i class="icofont-laika link">&#xef71;</i></a><code>delete</code> / <code>delete_</code></h3>
+        <p><code>delete(lens)(filter)</code> removes every element satisfying <code>filter</code> and returns the count. <code>delete_</code> returns the removed elements.</p>
+        <pre><code class="nohighlight"><span class="identifier">run</span><span>(
+  </span><span class="keyword">for</span><span> {
+    </span><span class="identifier">removed</span><span>   &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">delete_</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span> &lt; </span><span class="number-literal">28</span><span>)
+    </span><span class="identifier">remaining</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>)
+  } </span><span class="keyword">yield</span><span> (</span><span class="identifier">removed</span><span>, </span><span class="identifier">remaining</span><span>),
+  </span><span class="identifier">three</span><span>
+)
+</span><span class="comment">// res8: Tuple2[List[Person], List[Person]] = (
+//   List(Person(id = 2, name = &quot;Bob&quot;, age = 25)),
+//   List(
+//     Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//     Person(id = 3, name = &quot;Carol&quot;, age = 35)
+//   )
+// )</span></code></pre>
+        
+        <h3 id="truncate" class="section"><a class="anchor-link left" href="#truncate"><i class="icofont-laika link">&#xef71;</i></a><code>truncate</code></h3>
+        <p>Clears the entire collection and returns the number of elements that existed before.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">truncate</span><span>(</span><span class="identifier">personsL</span><span>), </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res9: Long = 3L</span></code></pre>
+        
+        <h3 id="upsert-upsertmany" class="section"><a class="anchor-link left" href="#upsert-upsertmany"><i class="icofont-laika link">&#xef71;</i></a><code>upsert</code> / <code>upsertMany</code></h3>
+        <p>Insert-or-replace based on a conflict key. When an existing element shares the same key, the <code>update: A =&gt; A</code> function is applied to it; otherwise the item is appended. Returns the number of affected rows.</p>
+        <pre><code class="nohighlight"><span class="comment">// Replace alice&#39;s name on conflict (same id)
+</span><span class="keyword">val</span><span> </span><span class="identifier">renamed</span><span> = </span><span class="identifier">alice</span><span>.</span><span class="identifier">copy</span><span>(</span><span class="identifier">name</span><span> = </span><span class="string-literal">&quot;Alicia&quot;</span><span>)
+</span><span class="comment">// renamed: Person = Person(id = 1, name = &quot;Alicia&quot;, age = 30)
+</span><span class="identifier">run</span><span>(
+  </span><span class="keyword">for</span><span> {
+    </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">upsert</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">_</span><span>.</span><span class="identifier">id</span><span>, </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">renamed</span><span>, </span><span class="identifier">alice</span><span>)
+    </span><span class="identifier">r</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>)
+  } </span><span class="keyword">yield</span><span> </span><span class="identifier">r</span><span>,
+  </span><span class="identifier">three</span><span>
+)
+</span><span class="comment">// res10: List[Person] = List(
+//   Person(id = 1, name = &quot;Alicia&quot;, age = 30),
+//   Person(id = 2, name = &quot;Bob&quot;, age = 25),
+//   Person(id = 3, name = &quot;Carol&quot;, age = 35)
+// )</span></code></pre>
+        <p><code>upsertMany</code> does the same for a list; <code>upsertMany_</code> returns the affected elements.</p>
+        
+        <h3 id="upsertwith-upsertmanywith" class="section"><a class="anchor-link left" href="#upsertwith-upsertmanywith"><i class="icofont-laika link">&#xef71;</i></a><code>upsertWith</code> / <code>upsertManyWith</code></h3>
+        <p>Like <code>upsert</code> but uses a binary merge function <code>(existing, incoming) =&gt; A</code>, so you can choose which fields from the incoming record to apply — mirroring Postgres <code>ON CONFLICT DO UPDATE SET col = EXCLUDED.col</code>. Returns the number of affected rows.</p>
+        <pre><code class="nohighlight"><span class="comment">// Keep existing age, take the incoming name
+</span><span class="keyword">val</span><span> </span><span class="identifier">incoming</span><span> = </span><span class="type-name">Person</span><span>(</span><span class="number-literal">1</span><span>, </span><span class="string-literal">&quot;Alicia&quot;</span><span>, </span><span class="number-literal">99</span><span>)
+</span><span class="comment">// incoming: Person = Person(id = 1, name = &quot;Alicia&quot;, age = 99)
+</span><span class="identifier">run</span><span>(
+  </span><span class="keyword">for</span><span> {
+    </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">upsertWith</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">_</span><span>.</span><span class="identifier">id</span><span>, (</span><span class="identifier">ex</span><span>, </span><span class="identifier">inc</span><span>) =&gt; </span><span class="identifier">ex</span><span>.</span><span class="identifier">copy</span><span>(</span><span class="identifier">name</span><span> = </span><span class="identifier">inc</span><span>.</span><span class="identifier">name</span><span>), </span><span class="identifier">incoming</span><span>)
+    </span><span class="identifier">r</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>)
+  } </span><span class="keyword">yield</span><span> </span><span class="identifier">r</span><span>,
+  </span><span class="identifier">three</span><span>
+)
+</span><span class="comment">// res11: List[Person] = List(
+//   Person(id = 1, name = &quot;Alicia&quot;, age = 30),
+//   Person(id = 2, name = &quot;Bob&quot;, age = 25),
+//   Person(id = 3, name = &quot;Carol&quot;, age = 35)
+// )</span></code></pre>
+        <p><code>upsertManyWith</code> handles a list; <code>upsertManyWith_</code> additionally returns the post-merge elements.</p>
+        <hr>
+        
+        <h2 id="query-syntax" class="section"><a class="anchor-link left" href="#query-syntax"><i class="icofont-laika link">&#xef71;</i></a>Query syntax</h2>
+        <p>Extension methods on <code>Mirra[D, F[A]]</code> from <code>MirraSyntax</code>. They transform or aggregate the <em>result</em> of a program without issuing additional state reads — the state is already read by the preceding <code>all</code> (or any other state operation returning a collection).</p>
+        
+        <h3 id="filter" class="section"><a class="anchor-link left" href="#filter"><i class="icofont-laika link">&#xef71;</i></a><code>filter</code></h3>
+        <p>Keeps only elements satisfying a predicate.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">filter</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span> &gt; </span><span class="number-literal">28</span><span>), </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res12: List[Person] = List(
+//   Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//   Person(id = 3, name = &quot;Carol&quot;, age = 35)
+// )</span></code></pre>
+        
+        <h3 id="collect" class="section"><a class="anchor-link left" href="#collect"><i class="icofont-laika link">&#xef71;</i></a><code>collect</code></h3>
+        <p>Applies a partial function and discards non-matches — like <code>filter</code> + <code>select</code> in one step.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(
+  </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">collect</span><span> { </span><span class="keyword">case</span><span> </span><span class="identifier">p</span><span> </span><span class="keyword">if</span><span> </span><span class="identifier">p</span><span>.</span><span class="identifier">age</span><span> &gt; </span><span class="number-literal">28</span><span> =&gt; </span><span class="identifier">p</span><span>.</span><span class="identifier">name</span><span> },
+  </span><span class="identifier">three</span><span>
+)
+</span><span class="comment">// res13: List[String] = List(&quot;Alice&quot;, &quot;Carol&quot;)</span></code></pre>
+        
+        <h3 id="headoption" class="section"><a class="anchor-link left" href="#headoption"><i class="icofont-laika link">&#xef71;</i></a><code>headOption</code></h3>
+        <p>Returns the first element of the result, or <code>None</code> if empty.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">headOption</span><span>, </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res14: Option[Person] = Some(Person(id = 1, name = &quot;Alice&quot;, age = 30))
+</span><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">filter</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span> &gt; </span><span class="number-literal">99</span><span>).</span><span class="identifier">headOption</span><span>, </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res15: Option[Person] = None</span></code></pre>
+        
+        <h3 id="select" class="section"><a class="anchor-link left" href="#select"><i class="icofont-laika link">&#xef71;</i></a><code>select</code></h3>
+        <p>Maps every element — the SQL <code>SELECT</code> equivalent.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">select</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">name</span><span>), </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res16: List[String] = List(&quot;Alice&quot;, &quot;Bob&quot;, &quot;Carol&quot;)</span></code></pre>
+        
+        <h3 id="size" class="section"><a class="anchor-link left" href="#size"><i class="icofont-laika link">&#xef71;</i></a><code>size</code></h3>
+        <p>Returns the number of elements.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">size</span><span>, </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res17: Long = 3L</span></code></pre>
+        
+        <h3 id="sumby" class="section"><a class="anchor-link left" href="#sumby"><i class="icofont-laika link">&#xef71;</i></a><code>sumBy</code></h3>
+        <p>Sums a numeric field across all elements.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">sumBy</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span>), </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res18: Int = 90</span></code></pre>
+        
+        <h3 id="minby-maxby" class="section"><a class="anchor-link left" href="#minby-maxby"><i class="icofont-laika link">&#xef71;</i></a><code>minBy</code> / <code>maxBy</code></h3>
+        <p>Returns the element with the smallest or largest value of a key, or <code>None</code> if empty.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">minBy</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span>), </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res19: Option[Person] = Some(Person(id = 2, name = &quot;Bob&quot;, age = 25))
+</span><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">maxBy</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span>), </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res20: Option[Person] = Some(Person(id = 3, name = &quot;Carol&quot;, age = 35))</span></code></pre>
+        
+        <h3 id="reduced" class="section"><a class="anchor-link left" href="#reduced"><i class="icofont-laika link">&#xef71;</i></a><code>reduced</code></h3>
+        <p>Folds all elements using their <code>cats.Monoid</code> instance. Works naturally for strings, numbers, etc.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">select</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">name</span><span>).</span><span class="identifier">reduced</span><span>, </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res21: String = &quot;AliceBobCarol&quot;</span></code></pre>
+        
+        <h3 id="groupby" class="section"><a class="anchor-link left" href="#groupby"><i class="icofont-laika link">&#xef71;</i></a><code>groupBy</code></h3>
+        <p>Partitions results into a <code>Map</code> keyed by the output of a function.</p>
+        <pre><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">dave</span><span> = </span><span class="type-name">Person</span><span>(</span><span class="number-literal">4</span><span>, </span><span class="string-literal">&quot;Dave&quot;</span><span>, </span><span class="number-literal">30</span><span>)
+</span><span class="comment">// dave: Person = Person(id = 4, name = &quot;Dave&quot;, age = 30)
+</span><span class="keyword">val</span><span> </span><span class="identifier">four</span><span> = </span><span class="type-name">Universe</span><span>(</span><span class="type-name">List</span><span>(</span><span class="identifier">alice</span><span>, </span><span class="identifier">bob</span><span>, </span><span class="identifier">carol</span><span>, </span><span class="identifier">dave</span><span>), </span><span class="type-name">Nil</span><span>)
+</span><span class="comment">// four: Universe = Universe(
+//   persons = List(
+//     Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//     Person(id = 2, name = &quot;Bob&quot;, age = 25),
+//     Person(id = 3, name = &quot;Carol&quot;, age = 35),
+//     Person(id = 4, name = &quot;Dave&quot;, age = 30)
+//   ),
+//   orders = List()
+// )
+</span><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">groupBy</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span>), </span><span class="identifier">four</span><span>)
+</span><span class="comment">// res22: Map[Int, List[Person]] = Map(
+//   25 -&gt; List(Person(id = 2, name = &quot;Bob&quot;, age = 25)),
+//   35 -&gt; List(Person(id = 3, name = &quot;Carol&quot;, age = 35)),
+//   30 -&gt; List(
+//     Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//     Person(id = 4, name = &quot;Dave&quot;, age = 30)
+//   )
+// )</span></code></pre>
+        
+        <h3 id="sortby-sortbydesc" class="section"><a class="anchor-link left" href="#sortby-sortbydesc"><i class="icofont-laika link">&#xef71;</i></a><code>sortBy</code> / <code>sortByDesc</code></h3>
+        <p>Sorts results ascending or descending by a key. Requires a <code>cats.Order</code> instance for the key type, which <code>cats.implicits.*</code> provides for all primitives.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">sortBy</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span>), </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res23: List[Person] = List(
+//   Person(id = 2, name = &quot;Bob&quot;, age = 25),
+//   Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//   Person(id = 3, name = &quot;Carol&quot;, age = 35)
+// )
+</span><span class="identifier">run</span><span>(</span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">sortByDesc</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span>), </span><span class="identifier">three</span><span>)
+</span><span class="comment">// res24: List[Person] = List(
+//   Person(id = 3, name = &quot;Carol&quot;, age = 35),
+//   Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//   Person(id = 2, name = &quot;Bob&quot;, age = 25)
+// )</span></code></pre>
+        
+        <h3 id="innerjoin-leftjoin-rightjoin" class="section"><a class="anchor-link left" href="#innerjoin-leftjoin-rightjoin"><i class="icofont-laika link">&#xef71;</i></a><code>innerJoin</code> / <code>leftJoin</code> / <code>rightJoin</code></h3>
+        <p>Joins the current result collection with another collection read from the universe via a lens. The join predicate is <code>(A, B) =&gt; Boolean</code>.</p>
+        <pre><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">withOrders</span><span> = </span><span class="type-name">Universe</span><span>(</span><span class="type-name">List</span><span>(</span><span class="identifier">alice</span><span>, </span><span class="identifier">bob</span><span>, </span><span class="identifier">carol</span><span>), </span><span class="type-name">List</span><span>(</span><span class="type-name">Order</span><span>(</span><span class="number-literal">1</span><span>, </span><span class="number-literal">1</span><span>, </span><span class="number-literal">100</span><span>), </span><span class="type-name">Order</span><span>(</span><span class="number-literal">2</span><span>, </span><span class="number-literal">2</span><span>, </span><span class="number-literal">200</span><span>)))
+</span><span class="comment">// withOrders: Universe = Universe(
+//   persons = List(
+//     Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//     Person(id = 2, name = &quot;Bob&quot;, age = 25),
+//     Person(id = 3, name = &quot;Carol&quot;, age = 35)
+//   ),
+//   orders = List(
+//     Order(id = 1, personId = 1, amount = 100),
+//     Order(id = 2, personId = 2, amount = 200)
+//   )
+// )
+</span><span>
+</span><span class="comment">// inner join: only persons who have a matching order
+</span><span class="identifier">run</span><span>(
+  </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>)
+    .</span><span class="identifier">innerJoin</span><span>(</span><span class="identifier">ordersL</span><span>)((</span><span class="identifier">p</span><span>, </span><span class="identifier">o</span><span>) =&gt; </span><span class="identifier">p</span><span>.</span><span class="identifier">id</span><span> == </span><span class="identifier">o</span><span>.</span><span class="identifier">personId</span><span>),
+  </span><span class="identifier">withOrders</span><span>
+)
+</span><span class="comment">// res25: List[Tuple2[Person, Order]] = List(
+//   (
+//     Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//     Order(id = 1, personId = 1, amount = 100)
+//   ),
+//   (
+//     Person(id = 2, name = &quot;Bob&quot;, age = 25),
+//     Order(id = 2, personId = 2, amount = 200)
+//   )
+// )</span></code></pre>
+        <pre><code class="nohighlight"><span class="comment">// left join: all persons, paired with their order if one exists
+</span><span class="identifier">run</span><span>(
+  </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>)
+    .</span><span class="identifier">leftJoin</span><span>(</span><span class="identifier">ordersL</span><span>)((</span><span class="identifier">p</span><span>, </span><span class="identifier">o</span><span>) =&gt; </span><span class="identifier">p</span><span>.</span><span class="identifier">id</span><span> == </span><span class="identifier">o</span><span>.</span><span class="identifier">personId</span><span>),
+  </span><span class="identifier">withOrders</span><span>
+)
+</span><span class="comment">// res26: List[Tuple2[Person, Option[Order]]] = List(
+//   (
+//     Person(id = 1, name = &quot;Alice&quot;, age = 30),
+//     Some(Order(id = 1, personId = 1, amount = 100))
+//   ),
+//   (
+//     Person(id = 2, name = &quot;Bob&quot;, age = 25),
+//     Some(Order(id = 2, personId = 2, amount = 200))
+//   ),
+//   (Person(id = 3, name = &quot;Carol&quot;, age = 35), None)
+// )</span></code></pre>
+        <pre><code class="nohighlight"><span class="comment">// right join: all orders, paired with their person if one matches
+</span><span class="identifier">run</span><span>(
+  </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>)
+    .</span><span class="identifier">rightJoin</span><span>(</span><span class="identifier">ordersL</span><span>)((</span><span class="identifier">p</span><span>, </span><span class="identifier">o</span><span>) =&gt; </span><span class="identifier">p</span><span>.</span><span class="identifier">id</span><span> == </span><span class="identifier">o</span><span>.</span><span class="identifier">personId</span><span>),
+  </span><span class="identifier">withOrders</span><span>
+)
+</span><span class="comment">// res27: List[Tuple2[Option[Person], Order]] = List(
+//   (
+//     Some(Person(id = 1, name = &quot;Alice&quot;, age = 30)),
+//     Order(id = 1, personId = 1, amount = 100)
+//   ),
+//   (
+//     Some(Person(id = 2, name = &quot;Bob&quot;, age = 25)),
+//     Order(id = 2, personId = 2, amount = 200)
+//   )
+// )</span></code></pre>
+        
+        <h3 id="limit-offset" class="section"><a class="anchor-link left" href="#limit-offset"><i class="icofont-laika link">&#xef71;</i></a><code>limit</code> / <code>offset</code></h3>
+        <p><code>limit(n)</code> returns at most <code>n</code> elements from the start of the result; <code>offset(n)</code> skips the first <code>n</code>. Chain them to implement pagination.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="comment">// Page 2 of size 1, sorted by age ascending
+</span><span class="identifier">run</span><span>(
+  </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>)
+    .</span><span class="identifier">sortBy</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span>)
+    .</span><span class="identifier">offset</span><span>(</span><span class="number-literal">1</span><span>)
+    .</span><span class="identifier">limit</span><span>(</span><span class="number-literal">1</span><span>),
+  </span><span class="identifier">three</span><span>
+)
+</span><span class="comment">// res28: List[Person] = List(Person(id = 1, name = &quot;Alice&quot;, age = 30))</span></code></pre>
+        <hr>
+        
+        <h2 id="combining-operations" class="section"><a class="anchor-link left" href="#combining-operations"><i class="icofont-laika link">&#xef71;</i></a>Combining operations</h2>
+        <p>Because <code>Mirra[D, *]</code> is a <code>Monad</code>, you can sequence any number of operations in a <code>for</code>-comprehension. State modifications accumulate across steps:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">run</span><span>(
+  </span><span class="keyword">for</span><span> {
+    </span><span class="identifier">_</span><span>      &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">insertMany</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="type-name">List</span><span>(</span><span class="identifier">alice</span><span>, </span><span class="identifier">bob</span><span>, </span><span class="identifier">carol</span><span>))
+    </span><span class="identifier">_</span><span>      &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">delete</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span> &lt; </span><span class="number-literal">28</span><span>)
+    </span><span class="identifier">_</span><span>      &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">upsertWith</span><span>(</span><span class="identifier">personsL</span><span>)(</span><span class="identifier">_</span><span>.</span><span class="identifier">id</span><span>, (</span><span class="identifier">ex</span><span>, </span><span class="identifier">inc</span><span>) =&gt; </span><span class="identifier">ex</span><span>.</span><span class="identifier">copy</span><span>(</span><span class="identifier">name</span><span> = </span><span class="identifier">inc</span><span>.</span><span class="identifier">name</span><span>), </span><span class="type-name">Person</span><span>(</span><span class="number-literal">1</span><span>, </span><span class="string-literal">&quot;Alicia&quot;</span><span>, </span><span class="number-literal">0</span><span>))
+    </span><span class="identifier">result</span><span> &lt;- </span><span class="type-name">Mirra</span><span>.</span><span class="identifier">all</span><span>(</span><span class="identifier">personsL</span><span>).</span><span class="identifier">sortBy</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">age</span><span>)
+  } </span><span class="keyword">yield</span><span> </span><span class="identifier">result</span><span>
+)
+</span><span class="comment">// res29: List[Person] = List(
+//   Person(id = 1, name = &quot;Alicia&quot;, age = 30),
+//   Person(id = 3, name = &quot;Carol&quot;, age = 35)
+// )</span></code></pre>
+
+        
+<hr class="footer-rule"/>
+<footer>
+  Site generated by <a href="https://typelevel.org/Laika/">Laika</a> with the Helium theme.
+</footer>
+
+
+      </main>
+
+    </div>
+
+  </body>
+
+</html>

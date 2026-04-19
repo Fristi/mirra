@@ -67,6 +67,8 @@
   <ul class="nav-list">
     <li class="level1 nav-leaf"><a href="index.html">Mirra</a></li>
     <li class="level1 nav-leaf"><a href="getting-started.html">Getting Started</a></li>
+    <li class="level1 nav-leaf"><a href="combinators.html">Combinators Reference</a></li>
+    <li class="level1 nav-leaf"><a href="composing-repositories.html">Composing Repositories</a></li>
     <li class="level1 nav-leaf"><a href="doobie.html">Doobie</a></li>
     <li class="level1 nav-leaf"><a href="skunk.html">Skunk</a></li>
     <li class="level1 active nav-leaf"><a href="#">munit + cats-effect</a></li>
@@ -94,86 +96,111 @@
 
         <h1 id="munit-cats-effect" class="title">munit + cats-effect</h1>
         <p>The <code>munit</code> module provides <code>MirraSuite[F[_], Alg[_[_]]]</code> — a trait that wires <code>CatsEffectSuite</code> and <code>ScalaCheckEffectSuite</code> together with Mirra&#39;s mirror-testing machinery.</p>
-        <p><code>scala
-libraryDependencies += &quot;io.github.fristi&quot; %% &quot;mirra-munit&quot; % &quot;&lt;version&gt;&quot;</code></p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;io.github.fristi&quot;</span><span> %% </span><span class="string-literal">&quot;mirra-munit&quot;</span><span> % </span><span class="string-literal">&quot;&lt;version&gt;&quot;</span></code></pre>
         
         <h2 id="how-to-use" class="section"><a class="anchor-link left" href="#how-to-use"><i class="icofont-laika link">&#xef71;</i></a>How to use</h2>
         <p>Extend <code>MirraSuite</code> and supply three abstract types:</p>
-        <p>| Type | Purpose | Example |
-        |---|---|---|
-        | <code>BootstrapContext</code> | What the test receives from infrastructure | <code>Containers</code> (testcontainers) |
-        | <code>MirraState</code> | The in-memory universe type | <code>Universe</code> |
-        | <code>TransactionEffect[_]</code> | The real DB effect | <code>ConnectionIO</code> |</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Purpose</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>BootstrapContext</code></td>
+              <td>What the test receives from infrastructure</td>
+              <td><code>Containers</code> (testcontainers)</td>
+            </tr>
+            <tr>
+              <td><code>MirraState</code></td>
+              <td>The in-memory universe type</td>
+              <td><code>Universe</code></td>
+            </tr>
+            <tr>
+              <td><code>TransactionEffect[_]</code></td>
+              <td>The real DB effect</td>
+              <td><code>ConnectionIO</code></td>
+            </tr>
+          </tbody>
+        </table>
         <p>Implement <code>bootstrapSystemUnderTest</code> to wire both interpreters and a rollback transactor into a <code>SystemUnderTest</code>. Then call <code>assertMirroring(context) { x =&gt; … }</code> in each test — <code>x</code> is your algebra running both interpreters simultaneously.</p>
         <p>Each property iteration runs inside a transaction that is <strong>always rolled back</strong>, so the database stays clean without restarting the container.</p>
         
         <h2 id="full-example" class="section"><a class="anchor-link left" href="#full-example"><i class="icofont-laika link">&#xef71;</i></a>Full example</h2>
-        <p>```scala
-        import cats.effect.{IO, Resource}
-        import cats.implicits.*
-        import com.dimafeng.testcontainers.PostgreSQLContainer
-        import com.dimafeng.testcontainers.munit.TestContainerForAll
-        import doobie.*
-        import doobie.implicits.*
-        import mirra.{DoobieSupport, MirraSuite}
-        import org.scalacheck.effect.PropF
-        import org.scalacheck.{Arbitrary, Gen}
-        import org.testcontainers.utility.DockerImageName</p>
-        <p>class DoobiePersonRepositorySpec
-            extends MirraSuite<span class="inline error"><span class="runtime-message error">unresolved link id reference: io, personrepository</span><code>[IO, PersonRepository]</code></span>
-            with TestContainerForAll {</p>
-        <p>given Arbitrary<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span> = Arbitrary {
-            for {
-              id   &lt;- Gen.uuid
-              name &lt;- Gen.stringOfN(50, Gen.alphaChar)
-              age  &lt;- Gen.posNum<span class="inline error"><span class="runtime-message error">unresolved link id reference: int</span><code>[Int]</code></span>
-            } yield Person(id, name, age)
-          }</p>
-        <p>override val containerDef: PostgreSQLContainer.Def = PostgreSQLContainer.Def(
-            dockerImageName = DockerImageName.parse(&quot;postgres:15.1&quot;),
-            databaseName    = &quot;testcontainer-scala&quot;,
-            username        = &quot;scala&quot;,
-            password        = &quot;scala&quot;
-          )</p>
-        <p>override type BootstrapContext     = Containers
-          override type MirraState           = Universe
-          override type TransactionEffect<span class="inline error"><span class="runtime-message error">unresolved link id reference: a</span><code>[A]</code></span> = ConnectionIO<span class="inline error"><span class="runtime-message error">unresolved link id reference: a</span><code>[A]</code></span></p>
-        <p>override def bootstrapSystemUnderTest(c: Containers): Resource<span class="inline error"><span class="runtime-message error">unresolved link id reference: io, systemundertest</span><code>[IO, SystemUnderTest]</code></span> =
-            Resource.pure(new SystemUnderTest(
-              Universe.zero,
-              DoobiePersonRepository,
-              MirraPersonRepository,
-              DoobieSupport.rollbackTrans<span class="inline error"><span class="runtime-message error">unresolved link id reference: io</span><code>[IO]</code></span>(&quot;org.postgresql.Driver&quot;, c.jdbcUrl, c.username, c.password)
-            ))</p>
-        <p>test(&quot;should insert and read&quot;) {
-            PropF.forAllF { (persons: List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>) =&gt;
-              withContainers { container =&gt;
-                assertMirroring(container) { x =&gt;
-                  for {
-                    _ &lt;- x.create
-                    _ &lt;- x.insertMany(persons)
-                    r &lt;- x.listAll()
-                  } yield r
-                }
-              }
-            }
-          }</p>
-        <p>test(&quot;should delete people older than&quot;) {
-            PropF.forAllF { (persons: List<span class="inline error"><span class="runtime-message error">unresolved link id reference: person</span><code>[Person]</code></span>, age: Int) =&gt;
-              withContainers { container =&gt;
-                assertMirroring(container) { x =&gt;
-                  for {
-                    _ &lt;- x.create
-                    _ &lt;- x.insertMany(persons)
-                    _ &lt;- x.deleteWhenOlderThen(age)
-                    r &lt;- x.listAll()
-                  } yield r
-                }
-              }
-            }
-          }
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.{</span><span class="type-name">IO</span><span>, </span><span class="type-name">Resource</span><span>}
+</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">implicits</span><span>.*
+</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">dimafeng</span><span>.</span><span class="identifier">testcontainers</span><span>.</span><span class="type-name">PostgreSQLContainer</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">dimafeng</span><span>.</span><span class="identifier">testcontainers</span><span>.</span><span class="identifier">munit</span><span>.</span><span class="type-name">TestContainerForAll</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">doobie</span><span>.*
+</span><span class="keyword">import</span><span> </span><span class="identifier">doobie</span><span>.</span><span class="identifier">implicits</span><span>.*
+</span><span class="keyword">import</span><span> </span><span class="identifier">mirra</span><span>.{</span><span class="type-name">DoobieSupport</span><span>, </span><span class="type-name">MirraSuite</span><span>}
+</span><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">scalacheck</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">PropF</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">scalacheck</span><span>.{</span><span class="type-name">Arbitrary</span><span>, </span><span class="type-name">Gen</span><span>}
+</span><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">testcontainers</span><span>.</span><span class="identifier">utility</span><span>.</span><span class="type-name">DockerImageName</span><span>
+
+</span><span class="keyword">class</span><span> </span><span class="type-name">DoobiePersonRepositorySpec</span><span>
+    </span><span class="keyword">extends</span><span> </span><span class="type-name">MirraSuite</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">PersonRepository</span><span>]
+    </span><span class="keyword">with</span><span> </span><span class="type-name">TestContainerForAll</span><span> {
+
+  </span><span class="identifier">given</span><span> </span><span class="type-name">Arbitrary</span><span>[</span><span class="type-name">Person</span><span>] = </span><span class="type-name">Arbitrary</span><span> {
+    </span><span class="keyword">for</span><span> {
+      </span><span class="identifier">id</span><span>   &lt;- </span><span class="type-name">Gen</span><span>.</span><span class="identifier">uuid</span><span>
+      </span><span class="identifier">name</span><span> &lt;- </span><span class="type-name">Gen</span><span>.</span><span class="identifier">stringOfN</span><span>(</span><span class="number-literal">50</span><span>, </span><span class="type-name">Gen</span><span>.</span><span class="identifier">alphaChar</span><span>)
+      </span><span class="identifier">age</span><span>  &lt;- </span><span class="type-name">Gen</span><span>.</span><span class="identifier">posNum</span><span>[</span><span class="type-name">Int</span><span>]
+    } </span><span class="keyword">yield</span><span> </span><span class="type-name">Person</span><span>(</span><span class="identifier">id</span><span>, </span><span class="identifier">name</span><span>, </span><span class="identifier">age</span><span>)
+  }
+
+  </span><span class="keyword">override</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">containerDef</span><span>: </span><span class="type-name">PostgreSQLContainer</span><span>.</span><span class="type-name">Def</span><span> = </span><span class="type-name">PostgreSQLContainer</span><span>.</span><span class="type-name">Def</span><span>(
+    </span><span class="identifier">dockerImageName</span><span> = </span><span class="type-name">DockerImageName</span><span>.</span><span class="identifier">parse</span><span>(</span><span class="string-literal">&quot;postgres:15.1&quot;</span><span>),
+    </span><span class="identifier">databaseName</span><span>    = </span><span class="string-literal">&quot;testcontainer-scala&quot;</span><span>,
+    </span><span class="identifier">username</span><span>        = </span><span class="string-literal">&quot;scala&quot;</span><span>,
+    </span><span class="identifier">password</span><span>        = </span><span class="string-literal">&quot;scala&quot;</span><span>
+  )
+
+  </span><span class="keyword">override</span><span> </span><span class="keyword">type</span><span> </span><span class="type-name">BootstrapContext</span><span>     = </span><span class="type-name">Containers</span><span>
+  </span><span class="keyword">override</span><span> </span><span class="keyword">type</span><span> </span><span class="type-name">MirraState</span><span>           = </span><span class="type-name">Universe</span><span>
+  </span><span class="keyword">override</span><span> </span><span class="keyword">type</span><span> </span><span class="type-name">TransactionEffect</span><span>[</span><span class="type-name">A</span><span>] = </span><span class="type-name">ConnectionIO</span><span>[</span><span class="type-name">A</span><span>]
+
+  </span><span class="keyword">override</span><span> </span><span class="keyword">def</span><span> </span><span class="declaration-name">bootstrapSystemUnderTest</span><span>(</span><span class="identifier">c</span><span>: </span><span class="type-name">Containers</span><span>): </span><span class="type-name">Resource</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">SystemUnderTest</span><span>] =
+    </span><span class="type-name">Resource</span><span>.</span><span class="identifier">pure</span><span>(</span><span class="keyword">new</span><span> </span><span class="type-name">SystemUnderTest</span><span>(
+      </span><span class="type-name">Universe</span><span>.</span><span class="identifier">zero</span><span>,
+      </span><span class="type-name">DoobiePersonRepository</span><span>,
+      </span><span class="type-name">MirraPersonRepository</span><span>,
+      </span><span class="type-name">DoobieSupport</span><span>.</span><span class="identifier">rollbackTrans</span><span>[</span><span class="type-name">IO</span><span>](</span><span class="string-literal">&quot;org.postgresql.Driver&quot;</span><span>, </span><span class="identifier">c</span><span>.</span><span class="identifier">jdbcUrl</span><span>, </span><span class="identifier">c</span><span>.</span><span class="identifier">username</span><span>, </span><span class="identifier">c</span><span>.</span><span class="identifier">password</span><span>)
+    ))
+
+  </span><span class="identifier">test</span><span>(</span><span class="string-literal">&quot;should insert and read&quot;</span><span>) {
+    </span><span class="type-name">PropF</span><span>.</span><span class="identifier">forAllF</span><span> { (</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>]) =&gt;
+      </span><span class="identifier">withContainers</span><span> { </span><span class="identifier">container</span><span> =&gt;
+        </span><span class="identifier">assertMirroring</span><span>(</span><span class="identifier">container</span><span>) { </span><span class="identifier">x</span><span> =&gt;
+          </span><span class="keyword">for</span><span> {
+            </span><span class="identifier">_</span><span> &lt;- </span><span class="identifier">x</span><span>.</span><span class="identifier">create</span><span>
+            </span><span class="identifier">_</span><span> &lt;- </span><span class="identifier">x</span><span>.</span><span class="identifier">insertMany</span><span>(</span><span class="identifier">persons</span><span>)
+            </span><span class="identifier">r</span><span> &lt;- </span><span class="identifier">x</span><span>.</span><span class="identifier">listAll</span><span>()
+          } </span><span class="keyword">yield</span><span> </span><span class="identifier">r</span><span>
         }
-        ```</p>
+      }
+    }
+  }
+
+  </span><span class="identifier">test</span><span>(</span><span class="string-literal">&quot;should delete people older than&quot;</span><span>) {
+    </span><span class="type-name">PropF</span><span>.</span><span class="identifier">forAllF</span><span> { (</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>], </span><span class="identifier">age</span><span>: </span><span class="type-name">Int</span><span>) =&gt;
+      </span><span class="identifier">withContainers</span><span> { </span><span class="identifier">container</span><span> =&gt;
+        </span><span class="identifier">assertMirroring</span><span>(</span><span class="identifier">container</span><span>) { </span><span class="identifier">x</span><span> =&gt;
+          </span><span class="keyword">for</span><span> {
+            </span><span class="identifier">_</span><span> &lt;- </span><span class="identifier">x</span><span>.</span><span class="identifier">create</span><span>
+            </span><span class="identifier">_</span><span> &lt;- </span><span class="identifier">x</span><span>.</span><span class="identifier">insertMany</span><span>(</span><span class="identifier">persons</span><span>)
+            </span><span class="identifier">_</span><span> &lt;- </span><span class="identifier">x</span><span>.</span><span class="identifier">deleteWhenOlderThen</span><span>(</span><span class="identifier">age</span><span>)
+            </span><span class="identifier">r</span><span> &lt;- </span><span class="identifier">x</span><span>.</span><span class="identifier">listAll</span><span>()
+          } </span><span class="keyword">yield</span><span> </span><span class="identifier">r</span><span>
+        }
+      }
+    }
+  }
+}</span></code></pre>
         <p>Notice there is no assertion logic about <em>what</em> the result should be. No filtering, no manual comparison. Just: &quot;do both implementations agree?&quot; The framework generates the inputs, runs both interpreters, and <code>assertMirroring</code> diffs the outputs.</p>
 
         
