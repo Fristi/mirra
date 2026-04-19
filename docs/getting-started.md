@@ -58,7 +58,7 @@ object MirraPersonRepository extends PersonRepository[[A] =>> Mirra[Universe, A]
 
 With the algebra and model in place, wire in a real database backend and a test framework integration:
 
-- [Doobie](doobie) — `ConnectionIO`-based backend + munit example
-- [Skunk](skunk) — `Kleisli[F, Session[F], *]`-based backend
-- [munit + cats-effect](munit) — property-test with `MirraSuite`
-- [ZIO Test](zio-test) — property-test with `MirraZIOSuite`
+- [Doobie](doobie.md) — `ConnectionIO`-based backend + munit example
+- [Skunk](skunk.md) — `Kleisli[F, Session[F], *]`-based backend
+- [munit + cats-effect](munit.md) — property-test with `MirraSuite`
+- [ZIO Test](zio-test.md) — property-test with `MirraZIOSuite`

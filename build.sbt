@@ -98,12 +98,14 @@ lazy val docs = project
   .in(file("site"))
   .enablePlugins(MirraSitePlugin)
   .dependsOn(core, doobie, skunk, munit, zioTest)
+  .settings(commonSettings)
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.44.1",
-      "com.dimafeng" %% "testcontainers-scala-munit"      % "0.44.1",
-      "dev.zio"      %% "zio-interop-cats"                % "23.1.0.3",
+      "org.tpolecat" %% "doobie-postgres"                  % "1.0.0-RC12",
+      "com.dimafeng" %% "testcontainers-scala-postgresql"  % "0.44.1",
+      "com.dimafeng" %% "testcontainers-scala-munit"       % "0.44.1",
+      "dev.zio"      %% "zio-interop-cats"                 % "23.1.0.3",
     ),
   )
 

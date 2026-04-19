@@ -29,6 +29,7 @@ import mirra.Mirra
 import monocle.Focus
 import doobie._
 import doobie.implicits._
+import doobie.postgres.implicits._
 
 final case class Person(id: UUID, name: String, age: Int)
 
