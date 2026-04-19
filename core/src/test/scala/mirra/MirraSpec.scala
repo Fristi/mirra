@@ -242,6 +242,81 @@ class MirraSpec extends FunSuite with MirraSyntax {
   }
 
   // ------------------------------------------------------------------
+  // upsertWith / upsertManyWith / upsertManyWith_
+  // ------------------------------------------------------------------
+
+  test("upsertWith inserts a new item when no conflict exists") {
+    assertEquals(run(Mirra.upsertWith(World.items)(_.id, (_, inc) => inc, a)), 1L)
+  }
+
+  test("upsertWith merges only selected fields on conflict") {
+    // existing: a = Item(1, "a", 10); incoming has same id but new name and value
+    val incoming = Item(1, "updated", 99)
+    val state = World(List(a, b), Nil)
+    // merge: keep existing value, take incoming name — like SET name = EXCLUDED.name
+    val result = run(
+      for {
+        _ <- Mirra.upsertWith(World.items)(_.id, (ex, inc) => ex.copy(name = inc.name), incoming)
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result.find(_.id == 1).map(_.name), Some("updated"))
+    assertEquals(result.find(_.id == 1).map(_.value), Some(10)) // value untouched
+  }
+
+  test("upsertWith does not duplicate on conflict") {
+    val state = World(List(a), Nil)
+    val result = run(
+      for {
+        _ <- Mirra.upsertWith(World.items)(_.id, (_, inc) => inc, a)
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result.length, 1)
+  }
+
+  test("upsertManyWith inserts all new items") {
+    assertEquals(run(Mirra.upsertManyWith(World.items)(_.id, (_, inc) => inc, List(a, b, c))), 3L)
+  }
+
+  test("upsertManyWith merges conflicts and inserts new items") {
+    val state = World(List(a), Nil)
+    // incoming a has same id; merge keeps existing value, takes incoming name
+    val incomingA = Item(1, "merged", 99)
+    val result = run(
+      for {
+        _ <- Mirra.upsertManyWith(World.items)(_.id, (ex, inc) => ex.copy(name = inc.name), List(incomingA, b))
+        xs <- Mirra.all(World.items)
+      } yield xs,
+      state
+    )
+    assertEquals(result.length, 2)
+    assertEquals(result.find(_.id == 1).map(_.name), Some("merged"))
+    assertEquals(result.find(_.id == 1).map(_.value), Some(10)) // value untouched
+    assertEquals(result.find(_.id == 2), Some(b))
+  }
+
+  test("upsertManyWith_ returns inserted items and post-merge updated items") {
+    val state = World(List(a), Nil)
+    val incomingA = Item(1, "merged", 99)
+    // a conflicts (updated), b is new (inserted)
+    val result = run(Mirra.upsertManyWith_(World.items)(_.id, (_, inc) => inc, List(incomingA, b)), state)
+    assertEquals(result.map(_.id).toSet, Set(1, 2))
+    assertEquals(result.find(_.id == 1).map(_.name), Some("merged"))
+  }
+
+  test("upsertManyWith_ returns post-merge state, not pre-merge state") {
+    val state = World(List(a), Nil)
+    // merge: take incoming name but keep existing value
+    val incoming = Item(1, "new-name", 999)
+    val result = run(Mirra.upsertManyWith_(World.items)(_.id, (ex, inc) => ex.copy(name = inc.name), List(incoming)), state)
+    assertEquals(result.find(_.id == 1).map(_.name), Some("new-name"))
+    assertEquals(result.find(_.id == 1).map(_.value), Some(10))
+  }
+
+  // ------------------------------------------------------------------
   // Monad laws / composition
   // ------------------------------------------------------------------
 
