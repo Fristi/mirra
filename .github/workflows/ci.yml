@@ -70,5 +70,5 @@ jobs:
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site/target/docs/site
+          publish_dir: ./docs/target/docs/site
           keep_files: true
