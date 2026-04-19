@@ -3,6 +3,7 @@ import laika.config.{MessageFilter, MessageFilters}
 import laika.helium.Helium
 import laika.helium.config._
 import laika.sbt.LaikaConfig
+import laika.sbt.LaikaPlugin.autoImport.laikaConfig
 import org.typelevel.sbt.TypelevelSitePlugin
 import org.typelevel.sbt.TypelevelSitePlugin.autoImport._
 import sbt._
@@ -21,8 +22,8 @@ object MirraSitePlugin extends AutoPlugin {
     // still rendered as warnings.
     laikaConfig := LaikaConfig.defaults.withMessageFilters(
       MessageFilters.custom(
-        failOn = MessageFilter.Fatal(),
-        render = MessageFilter.Warning(),
+        failOn = MessageFilter.Fatal,
+        render = MessageFilter.Warning,
       )
     ),
     tlSiteHelium := {
