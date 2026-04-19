@@ -87,7 +87,6 @@ val example =
         "dev.optics"    %% "monocle-macro"                      % "3.3.0",
         "com.dimafeng"  %% "testcontainers-scala-postgresql"    % "0.44.1",
         "com.dimafeng"  %% "testcontainers-scala-munit"         % "0.44.1",
-        // ZIO Test integration
         "dev.zio"       %% "zio"                                % "2.1.14"   % Test,
         "dev.zio"       %% "zio-test"                           % "2.1.14"   % Test,
         "dev.zio"       %% "zio-test-sbt"                       % "2.1.14"   % Test,
@@ -96,6 +95,21 @@ val example =
       testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
     )
     .dependsOn(core, munit, doobie, skunk, zioTest)
+
+lazy val docs = project
+  .in(file("site"))
+  .enablePlugins(MirraSitePlugin)
+  .dependsOn(core, doobie, skunk, munit, zioTest)
+  .settings(commonSettings)
+  .settings(
+    publish / skip := true,
+    libraryDependencies ++= Seq(
+      "org.tpolecat" %% "doobie-postgres"                  % "1.0.0-RC12",
+      "com.dimafeng" %% "testcontainers-scala-postgresql"  % "0.44.1",
+      "com.dimafeng" %% "testcontainers-scala-munit"       % "0.44.1",
+      "dev.zio"      %% "zio-interop-cats"                 % "23.1.0.3",
+    ),
+  )
 
 def commonSettings = Seq(
   scalacOptions += "-experimental"
