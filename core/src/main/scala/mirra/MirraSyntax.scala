@@ -1,6 +1,6 @@
 package mirra
 
-import cats.{Foldable, Functor, FunctorFilter, Monoid}
+import cats.{Foldable, Functor, FunctorFilter, Monoid, Order}
 import cats.implicits._
 import monocle.Lens
 
@@ -88,6 +88,30 @@ trait MirraSyntax {
       }
 
     }
+
+    /** Returns elements sorted ascending by the key produced by `f`. */
+    def sortBy[B: Order](f: A => B)(implicit F: Foldable[F]): Mirra[D, List[A]] =
+      Mirra(mirra.db.map(_.toList.sortWith((x, y) => Order[B].lt(f(x), f(y)))))
+
+    /** Returns elements sorted descending by the key produced by `f`. */
+    def sortByDesc[B: Order](f: A => B)(implicit F: Foldable[F]): Mirra[D, List[A]] =
+      Mirra(mirra.db.map(_.toList.sortWith((x, y) => Order[B].gt(f(x), f(y)))))
+
+    /** Returns the element with the smallest value of `f`, or `None` if empty. */
+    def minBy[B: Order](f: A => B)(implicit F: Foldable[F]): Mirra[D, Option[A]] =
+      Mirra(mirra.db.map(xs => F.minimumByOption(xs)(f)))
+
+    /** Returns the element with the largest value of `f`, or `None` if empty. */
+    def maxBy[B: Order](f: A => B)(implicit F: Foldable[F]): Mirra[D, Option[A]] =
+      Mirra(mirra.db.map(xs => F.maximumByOption(xs)(f)))
+
+    /** Sums the numeric values produced by `f` across all elements. */
+    def sumBy[B](f: A => B)(implicit N: Numeric[B], F: Foldable[F]): Mirra[D, B] =
+      Mirra(mirra.db.map(_.toList.foldLeft(N.zero)((acc, a) => N.plus(acc, f(a)))))
+
+    /** Groups elements by the key produced by `f`. */
+    def groupBy[B](f: A => B)(implicit F: Foldable[F]): Mirra[D, Map[B, List[A]]] =
+      Mirra(mirra.db.map(_.toList.groupBy(f)))
   }
 
 }
