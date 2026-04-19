@@ -33,6 +33,7 @@ import cats.tagless.{Derive, FunctorK, SemigroupalK}
 import java.util.UUID
 import mirra.Mirra
 import monocle.Focus
+import cats.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
