@@ -65,8 +65,8 @@ class PersonService(repo: PersonRepository[Task]) {
     ZIO.fail(new IllegalArgumentException("must be 18 or older")).when(person.age < 18) *>
       repo.insertMany(List(person)).unit
 
-  def listAdults(): Task[List[Person]] =
-    repo.listAll().map(_.filter(_.age >= 18))
+  def listAll(): Task[List[Person]] =
+    repo.listAll()
 }
 ```
 
@@ -108,17 +108,17 @@ object PersonServiceSpec extends ZIOSpecDefault {
       }
     }.provide(repoLayer),
 
-    test("listAdults filters correctly") {
+    test("listAll returns all registered persons") {
       ZIO.serviceWithZIO[PersonRepository[Task]] { repo =>
         val service = PersonService(repo)
         val people  = List(
                         Person(UUID.randomUUID(), "Alice", 30),
-                        Person(UUID.randomUUID(), "Bob",   16),
+                        Person(UUID.randomUUID(), "Carol", 25),
                       )
         for {
           _      <- repo.insertMany(people)
-          result <- service.listAdults()
-        } yield assertTrue(result.map(_.name) == List("Alice"))
+          result <- service.listAll()
+        } yield assertTrue(result.map(_.name) == List("Alice", "Carol"))
       }
     }.provide(repoLayer),
 

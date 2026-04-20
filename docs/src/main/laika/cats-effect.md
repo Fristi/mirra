@@ -68,8 +68,8 @@ class PersonService[F[_]: MonadThrow](repo: PersonRepository[F]) {
     else
       repo.insertMany(List(person)).void
 
-  def listAdults(): F[List[Person]] =
-    repo.listAll().map(_.filter(_.age >= 18))
+  def listAll(): F[List[Person]] =
+    repo.listAll()
 }
 ```
 
@@ -106,17 +106,17 @@ class PersonServiceSpec extends CatsEffectSuite {
     } yield assert(result.isLeft)
   }
 
-  test("listAdults filters correctly") {
+  test("listAll returns all registered persons") {
     for {
       repo    <- mkRepo
       service  = new PersonService[IO](repo)
       people   = List(
                    Person(UUID.randomUUID(), "Alice", 30),
-                   Person(UUID.randomUUID(), "Bob",   16),
+                   Person(UUID.randomUUID(), "Carol", 25),
                  )
       _       <- repo.insertMany(people)
-      result  <- service.listAdults()
-    } yield assertEquals(result.map(_.name), List("Alice"))
+      result  <- service.listAll()
+    } yield assertEquals(result.map(_.name), List("Alice", "Carol"))
   }
 }
 ```
