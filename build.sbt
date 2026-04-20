@@ -55,6 +55,28 @@ val munit =
     )
     .dependsOn(core)
 
+val zio =
+  project.in(file("zio"))
+    .settings(commonSettings)
+    .settings(
+      name := "mirra-zio",
+      libraryDependencies ++= Seq(
+        "dev.zio" %% "zio" % "2.1.14"
+      )
+    )
+    .dependsOn(core)
+
+val catsEffect =
+  project.in(file("cats-effect"))
+    .settings(commonSettings)
+    .settings(
+      name := "mirra-cats-effect",
+      libraryDependencies ++= Seq(
+        "org.typelevel" %% "cats-effect" % "3.5.7"
+      )
+    )
+    .dependsOn(core)
+
 val zioTest =
   project.in(file("zio-test"))
     .settings(commonSettings)
@@ -121,7 +143,7 @@ def commonSettings = Seq(
 )
 
 lazy val root = (project in file("."))
-  .aggregate(core, munit, doobie, skunk, zioTest)
+  .aggregate(core, munit, doobie, skunk, zioTest, zio, catsEffect)
   .settings(
     publish / skip := true
   )
