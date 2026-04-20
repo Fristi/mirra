@@ -53,15 +53,11 @@ object MirraPersonRepository extends PersonRepository[[A] =>> Mirra[Universe, A]
   def listAll(): Mirra[Universe, List[Person]] =
     Mirra.all(Focus[Universe](_.persons))
 }
-```
 
-```scala mdoc:compile-only
 import cats.MonadThrow
-import cats.implicits.*
+import cats.implicits._
 
-// Service is polymorphic — no IO, no concretion
 class PersonService[F[_]: MonadThrow](repo: PersonRepository[F]) {
-
   def registerAdult(person: Person): F[Unit] =
     if (person.age < 18)
       MonadThrow[F].raiseError(new IllegalArgumentException("must be 18 or older"))
@@ -77,6 +73,7 @@ In tests, instantiate the service by wiring it to an in-memory `PersonRepository
 
 ```scala mdoc:compile-only
 import cats.effect.IO
+import cats.implicits.*
 import mirra.MirraCatsEffect
 import munit.CatsEffectSuite
 import java.util.UUID

@@ -130,7 +130,7 @@ val example =
 lazy val docs = project
   .in(file("docs"))
   .enablePlugins(MirraSitePlugin)
-  .dependsOn(core, doobie, skunk, munit, zioTest)
+  .dependsOn(core, doobie, skunk, munit, zioTest, catsEffect, zio)
   .settings(commonSettings)
   .settings(
     publish / skip := true,
@@ -140,6 +140,8 @@ lazy val docs = project
       "com.dimafeng" %% "testcontainers-scala-postgresql"  % "0.44.1",
       "com.dimafeng" %% "testcontainers-scala-munit"       % "0.44.1",
       "dev.zio"      %% "zio-interop-cats"                 % "23.1.0.3",
+      "org.typelevel" %% "munit-cats-effect"               % "2.2.0",
+      "dev.zio"      %% "zio-test"                         % "2.1.14",
     ),
   )
 

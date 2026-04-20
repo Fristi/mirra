@@ -53,14 +53,11 @@ object MirraPersonRepository extends PersonRepository[[A] =>> Mirra[Universe, A]
   def listAll(): Mirra[Universe, List[Person]] =
     Mirra.all(Focus[Universe](_.persons))
 }
-```
 
-```scala mdoc:compile-only
 import zio.*
 
 // Service receives a concrete PersonRepository[Task] — no F[_] abstraction needed in ZIO.
 class PersonService(repo: PersonRepository[Task]) {
-
   def registerAdult(person: Person): Task[Unit] =
     ZIO.fail(new IllegalArgumentException("must be 18 or older")).when(person.age < 18) *>
       repo.insertMany(List(person)).unit
@@ -74,7 +71,6 @@ Wire the service against an in-memory `PersonRepository[Task]` using `MirraZIO.l
 
 ```scala mdoc:compile-only
 import mirra.MirraZIO
-import zio.*
 import zio.test.*
 import java.util.UUID
 
