@@ -61,8 +61,11 @@ val zio =
     .settings(
       name := "mirra-zio",
       libraryDependencies ++= Seq(
-        "dev.zio" %% "zio" % "2.1.14"
-      )
+        "dev.zio" %% "zio"          % "2.1.14",
+        "dev.zio" %% "zio-test"     % "2.1.14" % Test,
+        "dev.zio" %% "zio-test-sbt" % "2.1.14" % Test,
+      ),
+      testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
     )
     .dependsOn(core)
 
@@ -72,7 +75,9 @@ val catsEffect =
     .settings(
       name := "mirra-cats-effect",
       libraryDependencies ++= Seq(
-        "org.typelevel" %% "cats-effect" % "3.5.7"
+        "org.typelevel" %% "cats-effect"       % "3.5.7",
+        "org.scalameta" %% "munit"             % "1.3.0"   % Test,
+        "org.typelevel" %% "munit-cats-effect" % "2.2.0"   % Test,
       )
     )
     .dependsOn(core)
