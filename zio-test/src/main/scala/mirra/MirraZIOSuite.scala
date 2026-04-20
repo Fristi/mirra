@@ -129,12 +129,40 @@ trait MirraZIOSuite[Alg[_[_]]: SemigroupalK] extends ZIOSpecDefault {
     *
     * A failed equality check surfaces the two differing values via ZIO Test's
     * `assertTrue` macro, which provides a readable diff in the test report.
+    *
+    * == Approximate equality ==
+    *
+    * When exact structural equality is too strict — for example, when the real database returns
+    * floating-point coordinates that differ from the in-memory model by a rounding error — use
+    * the overload that accepts a custom equality function:
+    *
+    * {{{
+    * assertMirroring(ctx)(f)((a, b) => math.abs(a - b) < 1e-6)
+    * }}}
+    *
+    * For case classes, destructure in the lambda:
+    *
+    * {{{
+    * assertMirroring(ctx)(f) { (a, b) =>
+    *   math.abs(a.lat - b.lat) < 1e-6 && math.abs(a.lng - b.lng) < 1e-6
+    * }
+    * }}}
     */
   def assertMirroring[A](c: BootstrapContext)(f: SystemUnderTest#Paired => PairedEffect[A]): Task[TestResult] =
+    assertMirroring(c)(f)(_ == _)
+
+  /** Run `f` against both interpreters and assert the results are equal using a custom equality function.
+    *
+    * Use this overload when exact structural equality is too strict — for example, when comparing
+    * floating-point values with a tolerance.
+    *
+    * @param eq a function returning `true` when the real and model results are considered equal
+    */
+  def assertMirroring[A](c: BootstrapContext)(f: SystemUnderTest#Paired => PairedEffect[A])(eq: (A, A) => Boolean): Task[TestResult] =
     ZIO.scoped {
       bootstrapSystemUnderTest(c).flatMap { sut =>
         sut.eval(f).map { case (real, model) =>
-          assertTrue(real == model)
+          assertTrue(eq(real, model))
         }
       }
     }
