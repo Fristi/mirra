@@ -8,7 +8,7 @@
 All state operations take a Monocle `Lens` that targets the collection to operate on. Query syntax methods are extension methods on `Mirra[D, F[A]]` — mix `MirraSyntax` into your suite or import it:
 
 ```scala
-class MySpec extends MirraSuite[IO, MyAlg] with MirraSyntax { ... }
+class MySpec extends MirraMunitSuite[IO, MyAlg] with MirraSyntax { ... }
 ```
 
 ---

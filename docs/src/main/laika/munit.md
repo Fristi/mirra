@@ -1,24 +1,48 @@
 # munit + cats-effect
 
-The `munit` module provides `MirraSuite[F[_], Alg[_[_]]]` — a trait that wires `CatsEffectSuite` and `ScalaCheckEffectSuite` together with Mirra's mirror-testing machinery.
+The `munit` module provides `MirraMunitSuite[F[_], Alg[_[_]]]` — a trait that wires `CatsEffectSuite` and `ScalaCheckEffectSuite` together with Mirra's mirror-testing machinery.
 
 ```scala
 libraryDependencies += "io.github.fristi" %% "mirra-munit" % "<version>"
 ```
 
-## How to use
+## What is a SystemUnderTest?
 
-Extend `MirraSuite` and supply three abstract types:
+A `SystemUnderTest` holds two interpreters of your algebra running side-by-side:
+
+- The **real** interpreter — your actual database-backed implementation (e.g. Doobie or Skunk).
+- The **model** interpreter — a pure in-memory `Mirra` implementation that acts as a reference oracle.
+
+Both interpreters are fused into a single `Alg[PairedEffect]` using `SemigroupalK.productK`. When you call `assertMirroring`, the same program is threaded through both at once, returning `(realResult, modelResult)`, and the framework asserts they are equal.
+
+Constructing a `SystemUnderTest` requires four arguments:
+
+| Argument | Type | Description |
+|---|---|---|
+| `initState` | `MirraState` | Starting in-memory state (e.g. `Universe.zero`) |
+| `db` | `Alg[TransactionEffect]` | The real database interpreter |
+| `model` | `Alg[MirraEffect]` | The Mirra model interpreter |
+| `tx` | `TransactionEffect ~> F` | Runs (and always rolls back) a DB action in `F` |
+
+Each property iteration runs inside a transaction that is **always rolled back**, so the database stays clean without restarting the container.
+
+## How to implement
+
+### Step 1 — Supply three abstract types
 
 | Type | Purpose | Example |
 |---|---|---|
-| `BootstrapContext` | What the test receives from infrastructure | `Containers` (testcontainers) |
-| `MirraState` | The in-memory universe type | `Universe` |
-| `TransactionEffect[_]` | The real DB effect | `ConnectionIO` |
+| `BootstrapContext` | Infrastructure value your test framework passes to each test | `Containers` (testcontainers) |
+| `MirraState` | In-memory domain state threaded through the model interpreter | `Universe` |
+| `TransactionEffect[_]` | Real database effect monad | `ConnectionIO` (Doobie) |
 
-Implement `bootstrapSystemUnderTest` to wire both interpreters and a rollback transactor into a `SystemUnderTest`. Then call `assertMirroring(context) { x => … }` in each test — `x` is your algebra running both interpreters simultaneously.
+### Step 2 — Implement `bootstrapSystemUnderTest`
 
-Each property iteration runs inside a transaction that is **always rolled back**, so the database stays clean without restarting the container.
+Return a `Resource[F, SystemUnderTest]` that acquires your database connection / transactor and constructs a `new SystemUnderTest(initState, db, model, tx)`. Wrap it in `Resource.pure(...)` when setup is already managed externally (e.g. by `TestContainerForAll`). Use `DoobieSupport.rollbackTrans` or `SkunkSupport.rollbackTrans` for the `tx` argument.
+
+### Step 3 — Write property tests
+
+Use `PropF.forAllF` from scalacheck-effect inside munit `test(...)` blocks and call `assertMirroring(context) { x => … }`. The value `x` is your algebra running both interpreters simultaneously — write your program against it exactly as you would in production code.
 
 ## Full example
 
@@ -81,13 +105,13 @@ import com.dimafeng.testcontainers.PostgreSQLContainer
 import com.dimafeng.testcontainers.munit.TestContainerForAll
 import doobie.*
 import doobie.implicits.*
-import mirra.{DoobieSupport, MirraSuite}
+import mirra.{DoobieSupport, MirraMunitSuite}
 import org.scalacheck.effect.PropF
 import org.scalacheck.{Arbitrary, Gen}
 import org.testcontainers.utility.DockerImageName
 
 class DoobiePersonRepositorySpec
-    extends MirraSuite[IO, PersonRepository]
+    extends MirraMunitSuite[IO, PersonRepository]
     with TestContainerForAll {
 
   given Arbitrary[Person] = Arbitrary {

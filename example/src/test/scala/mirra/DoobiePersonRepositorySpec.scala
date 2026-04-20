@@ -10,7 +10,7 @@ import org.scalacheck.effect.PropF
 import org.scalacheck.{Arbitrary, Gen}
 import org.testcontainers.utility.DockerImageName
 
-class DoobiePersonRepositorySpec extends MirraSuite[IO, PersonRepository] with TestContainerForAll {
+class DoobiePersonRepositorySpec extends MirraMunitSuite[IO, PersonRepository] with TestContainerForAll {
 
   given Arbitrary[Person] = Arbitrary {
     for {
