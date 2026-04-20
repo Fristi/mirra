@@ -29,7 +29,7 @@ object PersonRepository {
 
 ## 2. Write the in-memory model
 
-Define a "universe" — a case class holding the state — and implement the algebra using Mirra's CRUD helpers with Monocle `Focus` lenses. This model is the single source of truth for expected behavior. It's so simple (append to a list, filter a list, return a list) that it's hard to get wrong.
+Define a "universe" — a case class holding the state — and implement the algebra using Mirra's helpers with Monocle `Focus` lenses. This model is the single source of truth for expected behavior. It's so simple (append to a list, filter a list, return a list) that it's hard to get wrong.
 
 ```scala mdoc
 import mirra.Mirra
@@ -62,9 +62,16 @@ object MirraPersonRepository extends PersonRepository[[A] =>> Mirra[Universe, A]
 
 With the algebra and model in place, wire in a real database backend and a test framework integration:
 
+Getting started
 - [Combinators reference](combinators.md) — every `Mirra` operator and `MirraSyntax` extension with examples
 - [Composing repositories](composing-repositories.md) — test multiple repositories together in a single `SystemUnderTest`
-- [Doobie](doobie.md) — `ConnectionIO`-based backend + munit example
-- [Skunk](skunk.md) — `Kleisli[F, Session[F], *]`-based backend
-- [munit + cats-effect](munit.md) — property-test with `MirraMunitSuite`
-- [ZIO Test](zio-test.md) — property-test with `MirraZIOSuite`
+
+Data-layer testing
+- [munit + cats-effect](../testing/munit.md) — property-test with `MirraMunitSuite`
+- [ZIO Test](../testing/zio-test.md) — property-test with `MirraZIOSuite`
+- [Doobie](../testing/doobie.md) — `ConnectionIO`-based backend + munit example
+- [Skunk](../testing/skunk.md) — `Kleisli[F, Session[F], *]`-based backend
+
+In-memory for service-layer testing or/and volatile runs
+- [ZIO](../in-memory/zio.md) — Forge `ZLayer` for `Mirra` based implementations, backed by a `Ref`
+- [Cats-effect](../in-memory/cats-effect.md) — Forge  `Mirra` based implementations, backed by a `Ref`
