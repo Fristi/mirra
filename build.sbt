@@ -55,6 +55,33 @@ val munit =
     )
     .dependsOn(core)
 
+val zio =
+  project.in(file("zio"))
+    .settings(commonSettings)
+    .settings(
+      name := "mirra-zio",
+      libraryDependencies ++= Seq(
+        "dev.zio" %% "zio"          % "2.1.14",
+        "dev.zio" %% "zio-test"     % "2.1.14" % Test,
+        "dev.zio" %% "zio-test-sbt" % "2.1.14" % Test,
+      ),
+      testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
+    )
+    .dependsOn(core)
+
+val catsEffect =
+  project.in(file("cats-effect"))
+    .settings(commonSettings)
+    .settings(
+      name := "mirra-cats-effect",
+      libraryDependencies ++= Seq(
+        "org.typelevel" %% "cats-effect"       % "3.5.7",
+        "org.scalameta" %% "munit"             % "1.3.0"   % Test,
+        "org.typelevel" %% "munit-cats-effect" % "2.2.0"   % Test,
+      )
+    )
+    .dependsOn(core)
+
 val zioTest =
   project.in(file("zio-test"))
     .settings(commonSettings)
@@ -103,7 +130,7 @@ val example =
 lazy val docs = project
   .in(file("docs"))
   .enablePlugins(MirraSitePlugin)
-  .dependsOn(core, doobie, skunk, munit, zioTest)
+  .dependsOn(core, doobie, skunk, munit, zioTest, catsEffect, zio)
   .settings(commonSettings)
   .settings(
     publish / skip := true,
@@ -113,6 +140,8 @@ lazy val docs = project
       "com.dimafeng" %% "testcontainers-scala-postgresql"  % "0.44.1",
       "com.dimafeng" %% "testcontainers-scala-munit"       % "0.44.1",
       "dev.zio"      %% "zio-interop-cats"                 % "23.1.0.3",
+      "org.typelevel" %% "munit-cats-effect"               % "2.2.0",
+      "dev.zio"      %% "zio-test"                         % "2.1.14",
     ),
   )
 
@@ -121,7 +150,7 @@ def commonSettings = Seq(
 )
 
 lazy val root = (project in file("."))
-  .aggregate(core, munit, doobie, skunk, zioTest)
+  .aggregate(core, munit, doobie, skunk, zioTest, zio, catsEffect)
   .settings(
     publish / skip := true
   )
