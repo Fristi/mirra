@@ -74,9 +74,9 @@ Rather than listing properties upfront, I'd describe it as: the model defines th
 
 **`assertMirroring`** — Executes the program against both interpreters, diffs the results, and fails the test if they diverge.
 
-**`MirraSuite[F[_], Alg[_[_]]]`** — A munit trait providing `assertMirroring`. Extends `CatsEffectSuite` and `ScalaCheckEffectSuite`; mix it into your test suite and implement `bootstrapSystemUnderTest`.
+**`MirraMunitSuite[F[_], Alg[_[_]]]`** — A munit trait providing `assertMirroring`. Extends `CatsEffectSuite` and `ScalaCheckEffectSuite`; mix it into your test suite and implement `bootstrapSystemUnderTest`.
 
-**`MirraZIOSuite[Alg[_[_]]]`** — A ZIO Test equivalent of `MirraSuite`. Extends `ZIOSpecDefault`; the effect type is fixed to `Task`. Property inputs come from ZIO Test's built-in `Gen`; resource management uses `ZLayer` + `provideShared`.
+**`MirraZIOSuite[Alg[_[_]]]`** — A ZIO Test equivalent of `MirraMunitSuite`. Extends `ZIOSpecDefault`; the effect type is fixed to `Task`. Property inputs come from ZIO Test's built-in `Gen`; resource management uses `ZLayer` + `provideShared`.
 
 **`FunctorK` / `SemigroupalK`** — Type classes from [cats-tagless](https://typelevel.org/cats-tagless/) that lift familiar abstractions to the level of type constructors of kind `(* -> *) -> *` — i.e., algebras whose effect type is a parameter. `FunctorK` lets you map the effect type of an algebra (e.g. turn `Alg[IO]` into `Alg[Option]`). `SemigroupalK` lets you combine two interpretations into one that runs both simultaneously — which is exactly how `SystemUnderTest` wires the real implementation together with the in-memory model. Both are derived automatically with `Derive.functorK` / `Derive.semigroupalK`. See the [cats-tagless documentation](https://typelevel.org/cats-tagless/) to learn more.
 
@@ -89,7 +89,7 @@ Rather than listing properties upfront, I'd describe it as: the model defines th
 | Module | What it provides |
 |---|---|
 | `core` | `Mirra[S, A]`, `MirraSyntax` |
-| `munit` | `MirraSuite[F, Alg]` — munit + cats-effect + ScalaCheck integration |
+| `munit` | `MirraMunitSuite[F, Alg]` — munit + cats-effect + ScalaCheck integration |
 | `zio-test` | `MirraZIOSuite[Alg]` — ZIO Test integration (effect fixed to `Task`) |
 | `doobie` | `DoobieSupport.rollbackTrans` — `ConnectionIO ~> F` with always-rollback |
 | `skunk` | `SkunkSupport.rollbackTrans` — `Kleisli[F, Session[F], *] ~> F` with always-rollback |

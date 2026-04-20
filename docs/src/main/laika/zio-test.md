@@ -12,19 +12,41 @@ Bridging to Cats Effect (so that Doobie's `Transactor` works with `Task`) is don
 libraryDependencies += "dev.zio" %% "zio-interop-cats" % "<version>"
 ```
 
-## How to use
+## What is a SystemUnderTest?
 
-Extend `MirraZIOSuite` as an `object` and supply three abstract types:
+A `SystemUnderTest` holds two interpreters of your algebra running side-by-side:
+
+- The **real** interpreter — your actual database-backed implementation (e.g. Doobie or Skunk).
+- The **model** interpreter — a pure in-memory `Mirra` implementation that acts as a reference oracle.
+
+Both interpreters are fused into a single `Alg[PairedEffect]` using `SemigroupalK.productK`. When you call `assertMirroring`, the same program is threaded through both at once, returning `(realResult, modelResult)`, and the framework asserts they are equal using ZIO Test's `assertTrue` macro, which produces a readable diff on failure.
+
+Constructing a `SystemUnderTest` requires four arguments:
+
+| Argument | Type | Description |
+|---|---|---|
+| `initState` | `MirraState` | Starting in-memory state (e.g. `Universe.zero`) |
+| `db` | `Alg[TransactionEffect]` | The real database interpreter |
+| `model` | `Alg[MirraEffect]` | The Mirra model interpreter |
+| `tx` | `TransactionEffect ~> Task` | Runs (and always rolls back) a DB action as a `Task` |
+
+## How to implement
+
+### Step 1 — Supply three abstract types
 
 | Type | Purpose | Example |
 |---|---|---|
-| `BootstrapContext` | Infrastructure context passed to each test | `PostgreSQLContainer` |
-| `MirraState` | The in-memory universe type | `Universe` |
-| `TransactionEffect[_]` | The real DB effect | `ConnectionIO` |
+| `BootstrapContext` | Infrastructure value produced by your ZLayer bootstrap | `PostgreSQLContainer` |
+| `MirraState` | In-memory domain state threaded through the model interpreter | `Universe` |
+| `TransactionEffect[_]` | Real database effect monad | `ConnectionIO` (Doobie) |
 
-Implement `bootstrapSystemUnderTest` using `ZIO.acquireRelease` / `ZLayer.scoped` for resources that need cleanup. Manage the container with `ZLayer.scoped` + `provideShared` so it starts **once per suite** and is shared across all tests.
+### Step 2 — Implement `bootstrapSystemUnderTest`
 
-Call `assertMirroring(context) { x => … }` inside each `test` — `x` is your algebra running both interpreters simultaneously.
+Return a `ZIO[Scope, Throwable, SystemUnderTest]` that acquires your database connection / transactor and constructs a `new SystemUnderTest(initState, db, model, tx)`. Use `ZIO.acquireRelease` or `ZLayer.scoped` for resources that need cleanup. Use `DoobieSupport.rollbackTrans` (lifted via `zio-interop-cats`) or `SkunkSupport.rollbackTrans` for the `tx` argument.
+
+### Step 3 — Write property tests using ZIO Test
+
+Define `spec` using `suite(...)` / `test(...)`. Inside each test, call `assertMirroring(context) { x => … }` where `x` is your algebra running both interpreters simultaneously — write your program against it exactly as you would in production code. Share expensive resources (e.g. containers) across tests with `.provideShared(layer)` so they start **once per suite**.
 
 ## Full example
 

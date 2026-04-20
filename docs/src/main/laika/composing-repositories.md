@@ -1,6 +1,6 @@
 # Composing Repositories
 
-Real applications usually have more than one repository. Mirra handles multi-repository system under tests naturally: wrap the individual repositories in a single higher-kinded trait, derive `FunctorK` and `SemigroupalK` for it, and pass it to `MirraSuite` or `MirraZIOSuite` as the `Alg` type parameter.
+Real applications usually have more than one repository. Mirra handles multi-repository system under tests naturally: wrap the individual repositories in a single higher-kinded trait, derive `FunctorK` and `SemigroupalK` for it, and pass it to `MirraMunitSuite` or `MirraZIOSuite` as the `Alg` type parameter.
 
 ## Requirements
 
@@ -84,12 +84,12 @@ object MirraRepositories extends Repositories[[A] =>> Mirra[Universe, A]] {
 }
 ```
 
-## 5. Wire into MirraSuite
+## 5. Wire into MirraMunitSuite
 
 Set the `Alg` type parameter to `Repositories`. The `bootstrapSystemUnderTest` method receives a real `Repositories[TransactionEffect]` implementation alongside `MirraRepositories`, wired into a single `SystemUnderTest`. Inside `assertMirroring`, access each repository through the paired interpreter:
 
 ```scala
-class RepositoriesSpec extends MirraSuite[IO, Repositories] {
+class RepositoriesSpec extends MirraMunitSuite[IO, Repositories] {
 
   override type BootstrapContext     = Containers
   override type MirraState           = Universe

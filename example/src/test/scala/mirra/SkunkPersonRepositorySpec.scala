@@ -12,7 +12,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.testcontainers.utility.DockerImageName
 import skunk.Session
 
-class SkunkPersonRepositorySpec extends MirraSuite[IO, PersonRepository] with TestContainerForAll {
+class SkunkPersonRepositorySpec extends MirraMunitSuite[IO, PersonRepository] with TestContainerForAll {
 
   given Arbitrary[Person] = Arbitrary {
     for {
