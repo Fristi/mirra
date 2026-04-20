@@ -91,7 +91,7 @@
     <li class="level1 nav-leaf"><a href="#_2-define-the-composed-algebra">2. Define the composed algebra</a></li>
     <li class="level1 nav-leaf"><a href="#_3-expand-the-universe">3. Expand the universe</a></li>
     <li class="level1 nav-leaf"><a href="#_4-implement-the-mirra-model">4. Implement the Mirra model</a></li>
-    <li class="level1 nav-leaf"><a href="#_5-wire-into-mirrasuite">5. Wire into MirraSuite</a></li>
+    <li class="level1 nav-leaf"><a href="#_5-wire-into-mirramunitsuite">5. Wire into MirraMunitSuite</a></li>
   </ul>
 
   <p class="footer"></p>
@@ -101,7 +101,7 @@
       <main class="content">
 
         <h1 id="composing-repositories" class="title">Composing Repositories</h1>
-        <p>Real applications usually have more than one repository. Mirra handles multi-repository system under tests naturally: wrap the individual repositories in a single higher-kinded trait, derive <code>FunctorK</code> and <code>SemigroupalK</code> for it, and pass it to <code>MirraSuite</code> or <code>MirraZIOSuite</code> as the <code>Alg</code> type parameter.</p>
+        <p>Real applications usually have more than one repository. Mirra handles multi-repository system under tests naturally: wrap the individual repositories in a single higher-kinded trait, derive <code>FunctorK</code> and <code>SemigroupalK</code> for it, and pass it to <code>MirraMunitSuite</code> or <code>MirraZIOSuite</code> as the <code>Alg</code> type parameter.</p>
         
         <h2 id="requirements" class="section"><a class="anchor-link left" href="#requirements"><i class="icofont-laika link">&#xef71;</i></a>Requirements</h2>
         <p><code>SystemUnderTest</code> uses <code>SemigroupalK</code> to run both the real implementation and the in-memory model through the same program simultaneously, and <code>FunctorK</code> to adapt effect types. For the composed trait&#39;s instances to be derivable by cats-tagless, <strong>every sub-repository must already have <code>FunctorK</code> and <code>SemigroupalK</code> instances</strong> — cats-tagless delegates to them when deriving instances for the outer trait.</p>
@@ -167,9 +167,9 @@
 </span><span>  </span><span class="keyword">def</span><span> </span><span class="declaration-name">organizations</span><span> = </span><span class="type-name">MirraOrganizationRepository</span><span> </span><span class="comment">// object which implements the OrganizationRepository interface with Mirra
 </span><span>}</span></code></pre>
         
-        <h2 id="_5-wire-into-mirrasuite" class="section"><a class="anchor-link left" href="#_5-wire-into-mirrasuite"><i class="icofont-laika link">&#xef71;</i></a>5. Wire into MirraSuite</h2>
+        <h2 id="_5-wire-into-mirramunitsuite" class="section"><a class="anchor-link left" href="#_5-wire-into-mirramunitsuite"><i class="icofont-laika link">&#xef71;</i></a>5. Wire into MirraMunitSuite</h2>
         <p>Set the <code>Alg</code> type parameter to <code>Repositories</code>. The <code>bootstrapSystemUnderTest</code> method receives a real <code>Repositories[TransactionEffect]</code> implementation alongside <code>MirraRepositories</code>, wired into a single <code>SystemUnderTest</code>. Inside <code>assertMirroring</code>, access each repository through the paired interpreter:</p>
-        <pre><code class="nohighlight"><span class="keyword">class</span><span> </span><span class="type-name">RepositoriesSpec</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">MirraSuite</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">Repositories</span><span>] {
+        <pre><code class="nohighlight"><span class="keyword">class</span><span> </span><span class="type-name">RepositoriesSpec</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">MirraMunitSuite</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">Repositories</span><span>] {
 
   </span><span class="keyword">override</span><span> </span><span class="keyword">type</span><span> </span><span class="type-name">BootstrapContext</span><span>     = </span><span class="type-name">Containers</span><span>
   </span><span class="keyword">override</span><span> </span><span class="keyword">type</span><span> </span><span class="type-name">MirraState</span><span>           = </span><span class="type-name">Universe</span><span>

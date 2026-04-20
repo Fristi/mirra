@@ -124,7 +124,7 @@
           <li><strong>Query syntax</strong> (<code>MirraSyntax</code>) — transform and aggregate the <em>result</em> of a <code>Mirra[D, List[A]]</code> program: filter, sort, join, paginate.</li>
         </ul>
         <p>All state operations take a Monocle <code>Lens</code> that targets the collection to operate on. Query syntax methods are extension methods on <code>Mirra[D, F[A]]</code> — mix <code>MirraSyntax</code> into your suite or import it:</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">class</span><span> </span><span class="type-name">MySpec</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">MirraSuite</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">MyAlg</span><span>] </span><span class="keyword">with</span><span> </span><span class="type-name">MirraSyntax</span><span> { ... }</span></code></pre>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">class</span><span> </span><span class="type-name">MySpec</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">MirraMunitSuite</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">MyAlg</span><span>] </span><span class="keyword">with</span><span> </span><span class="type-name">MirraSyntax</span><span> { ... }</span></code></pre>
         <hr>
         <p>Some basics!</p>
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">implicits</span><span>.*
@@ -136,9 +136,9 @@
 </span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Universe</span><span>(</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>], </span><span class="identifier">orders</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Order</span><span>])
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">personsL</span><span> = </span><span class="type-name">Focus</span><span>[</span><span class="type-name">Universe</span><span>](</span><span class="identifier">_</span><span>.</span><span class="identifier">persons</span><span>)
-</span><span class="comment">// personsL: PLens[Universe, Universe, List[Person], List[Person]] = monocle.PLens$$anon$2@5ff68b8b
+</span><span class="comment">// personsL: PLens[Universe, Universe, List[Person], List[Person]] = monocle.PLens$$anon$2@32c00608
 </span><span class="keyword">val</span><span> </span><span class="identifier">ordersL</span><span> = </span><span class="type-name">Focus</span><span>[</span><span class="type-name">Universe</span><span>](</span><span class="identifier">_</span><span>.</span><span class="identifier">orders</span><span>)
-</span><span class="comment">// ordersL: PLens[Universe, Universe, List[Order], List[Order]] = monocle.PLens$$anon$2@25846a98
+</span><span class="comment">// ordersL: PLens[Universe, Universe, List[Order], List[Order]] = monocle.PLens$$anon$2@5097a35d
 </span><span>
 </span><span class="keyword">object</span><span> </span><span class="type-name">Universe</span><span>:
   </span><span class="keyword">val</span><span> </span><span class="identifier">zero</span><span>: </span><span class="type-name">Universe</span><span> = </span><span class="type-name">Universe</span><span>(</span><span class="type-name">Nil</span><span>, </span><span class="type-name">Nil</span><span>)

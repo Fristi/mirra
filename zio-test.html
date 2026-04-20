@@ -86,7 +86,11 @@
   <p class="header"><a href="#">ZIO Test</a></p>
 
   <ul class="nav-list">
-    <li class="level1 nav-leaf"><a href="#how-to-use">How to use</a></li>
+    <li class="level1 nav-leaf"><a href="#what-is-a-systemundertest">What is a SystemUnderTest?</a></li>
+    <li class="level1 nav-node"><a href="#how-to-implement">How to implement</a></li>
+    <li class="level2 nav-leaf"><a href="#step-1-supply-three-abstract-types">Step 1 — Supply three abstract types</a></li>
+    <li class="level2 nav-leaf"><a href="#step-2-implement-bootstrapsystemundertest">Step 2 — Implement <code>bootstrapSystemUnderTest</code></a></li>
+    <li class="level2 nav-leaf"><a href="#step-3-write-property-tests-using-zio-test">Step 3 — Write property tests using ZIO Test</a></li>
     <li class="level1 nav-leaf"><a href="#full-example">Full example</a></li>
   </ul>
 
@@ -102,8 +106,49 @@
         <p>Bridging to Cats Effect (so that Doobie&#39;s <code>Transactor</code> works with <code>Task</code>) is done via <code>zio-interop-cats</code>. Add it alongside the backend module:</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;dev.zio&quot;</span><span> %% </span><span class="string-literal">&quot;zio-interop-cats&quot;</span><span> % </span><span class="string-literal">&quot;&lt;version&gt;&quot;</span></code></pre>
         
-        <h2 id="how-to-use" class="section"><a class="anchor-link left" href="#how-to-use"><i class="icofont-laika link">&#xef71;</i></a>How to use</h2>
-        <p>Extend <code>MirraZIOSuite</code> as an <code>object</code> and supply three abstract types:</p>
+        <h2 id="what-is-a-systemundertest" class="section"><a class="anchor-link left" href="#what-is-a-systemundertest"><i class="icofont-laika link">&#xef71;</i></a>What is a SystemUnderTest?</h2>
+        <p>A <code>SystemUnderTest</code> holds two interpreters of your algebra running side-by-side:</p>
+        <ul>
+          <li>The <strong>real</strong> interpreter — your actual database-backed implementation (e.g. Doobie or Skunk).</li>
+          <li>The <strong>model</strong> interpreter — a pure in-memory <code>Mirra</code> implementation that acts as a reference oracle.</li>
+        </ul>
+        <p>Both interpreters are fused into a single <code>Alg[PairedEffect]</code> using <code>SemigroupalK.productK</code>. When you call <code>assertMirroring</code>, the same program is threaded through both at once, returning <code>(realResult, modelResult)</code>, and the framework asserts they are equal using ZIO Test&#39;s <code>assertTrue</code> macro, which produces a readable diff on failure.</p>
+        <p>Constructing a <code>SystemUnderTest</code> requires four arguments:</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Argument</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>initState</code></td>
+              <td><code>MirraState</code></td>
+              <td>Starting in-memory state (e.g. <code>Universe.zero</code>)</td>
+            </tr>
+            <tr>
+              <td><code>db</code></td>
+              <td><code>Alg[TransactionEffect]</code></td>
+              <td>The real database interpreter</td>
+            </tr>
+            <tr>
+              <td><code>model</code></td>
+              <td><code>Alg[MirraEffect]</code></td>
+              <td>The Mirra model interpreter</td>
+            </tr>
+            <tr>
+              <td><code>tx</code></td>
+              <td><code>TransactionEffect ~&gt; Task</code></td>
+              <td>Runs (and always rolls back) a DB action as a <code>Task</code></td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <h2 id="how-to-implement" class="section"><a class="anchor-link left" href="#how-to-implement"><i class="icofont-laika link">&#xef71;</i></a>How to implement</h2>
+        
+        <h3 id="step-1-supply-three-abstract-types" class="section"><a class="anchor-link left" href="#step-1-supply-three-abstract-types"><i class="icofont-laika link">&#xef71;</i></a>Step 1 — Supply three abstract types</h3>
         <table>
           <thead>
             <tr>
@@ -115,23 +160,27 @@
           <tbody>
             <tr>
               <td><code>BootstrapContext</code></td>
-              <td>Infrastructure context passed to each test</td>
+              <td>Infrastructure value produced by your ZLayer bootstrap</td>
               <td><code>PostgreSQLContainer</code></td>
             </tr>
             <tr>
               <td><code>MirraState</code></td>
-              <td>The in-memory universe type</td>
+              <td>In-memory domain state threaded through the model interpreter</td>
               <td><code>Universe</code></td>
             </tr>
             <tr>
               <td><code>TransactionEffect[_]</code></td>
-              <td>The real DB effect</td>
-              <td><code>ConnectionIO</code></td>
+              <td>Real database effect monad</td>
+              <td><code>ConnectionIO</code> (Doobie)</td>
             </tr>
           </tbody>
         </table>
-        <p>Implement <code>bootstrapSystemUnderTest</code> using <code>ZIO.acquireRelease</code> / <code>ZLayer.scoped</code> for resources that need cleanup. Manage the container with <code>ZLayer.scoped</code> + <code>provideShared</code> so it starts <strong>once per suite</strong> and is shared across all tests.</p>
-        <p>Call <code>assertMirroring(context) { x =&gt; … }</code> inside each <code>test</code> — <code>x</code> is your algebra running both interpreters simultaneously.</p>
+        
+        <h3 id="step-2-implement-bootstrapsystemundertest" class="section"><a class="anchor-link left" href="#step-2-implement-bootstrapsystemundertest"><i class="icofont-laika link">&#xef71;</i></a>Step 2 — Implement <code>bootstrapSystemUnderTest</code></h3>
+        <p>Return a <code>ZIO[Scope, Throwable, SystemUnderTest]</code> that acquires your database connection / transactor and constructs a <code>new SystemUnderTest(initState, db, model, tx)</code>. Use <code>ZIO.acquireRelease</code> or <code>ZLayer.scoped</code> for resources that need cleanup. Use <code>DoobieSupport.rollbackTrans</code> (lifted via <code>zio-interop-cats</code>) or <code>SkunkSupport.rollbackTrans</code> for the <code>tx</code> argument.</p>
+        
+        <h3 id="step-3-write-property-tests-using-zio-test" class="section"><a class="anchor-link left" href="#step-3-write-property-tests-using-zio-test"><i class="icofont-laika link">&#xef71;</i></a>Step 3 — Write property tests using ZIO Test</h3>
+        <p>Define <code>spec</code> using <code>suite(...)</code> / <code>test(...)</code>. Inside each test, call <code>assertMirroring(context) { x =&gt; … }</code> where <code>x</code> is your algebra running both interpreters simultaneously — write your program against it exactly as you would in production code. Share expensive resources (e.g. containers) across tests with <code>.provideShared(layer)</code> so they start <strong>once per suite</strong>.</p>
         
         <h2 id="full-example" class="section"><a class="anchor-link left" href="#full-example"><i class="icofont-laika link">&#xef71;</i></a>Full example</h2>
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">implicits</span><span>.*
