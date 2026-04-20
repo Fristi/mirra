@@ -14,7 +14,7 @@ object MirraZIO {
   def layer[Alg[_[_]]: FunctorK, D](
       alg: Alg[[A] =>> Mirra[D, A]],
       initialState: D,
-  ): ULayer[Alg[Task]] =
+  )(using Tag[Alg[Task]]): ULayer[Alg[Task]] =
     ZLayer.fromZIO(
       Ref.make(initialState).map { ref =>
         val nt: ([A] =>> Mirra[D, A]) ~> Task = new (([A] =>> Mirra[D, A]) ~> Task) {
