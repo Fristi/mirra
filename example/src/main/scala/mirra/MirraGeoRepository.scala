@@ -23,6 +23,6 @@ object MirraGeoRepository extends GeoRepository[[A] =>> Mirra[Unit, A]] {
       .max(-1.0).min(1.0)
     val res = math.acos(cosAngle) * EarthRadiusMeters
     println(s"compute done ($lon1, $lat1) .. ($lon2, $lat2) -> $res")
-    MirraGeoRepository
+    res
   }
 }
