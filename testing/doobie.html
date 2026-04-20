@@ -101,7 +101,7 @@
 
         <h1 id="doobie" class="title">Doobie</h1>
         <p>The <code>doobie</code> module provides <code>DoobieSupport.rollbackTrans</code>, a natural transformation <code>ConnectionIO ~&gt; F</code> that runs each property-test iteration inside a transaction that is <strong>always rolled back</strong>. This keeps the database clean between iterations without restarting the container.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;io.github.fristi&quot;</span><span> %% </span><span class="string-literal">&quot;mirra-doobie&quot;</span><span> % </span><span class="string-literal">&quot;&lt;version&gt;&quot;</span></code></pre>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;io.github.fristi&quot;</span><span> %% </span><span class="string-literal">&quot;mirra-doobie&quot;</span><span> % </span><span class="string-literal">&quot;0.2.0&quot;</span></code></pre>
         
         <h2 id="implementation" class="section"><a class="anchor-link left" href="#implementation"><i class="icofont-laika link">&#xef71;</i></a>Implementation</h2>
         <p>The effect type is <code>ConnectionIO</code> — Doobie&#39;s own connection action type. Implement your algebra against it as you normally would:</p>

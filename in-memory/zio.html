@@ -101,7 +101,7 @@
 
         <h1 id="zio" class="title">ZIO</h1>
         <p>The <code>zio</code> module provides <code>MirraZIO.layer</code> — a factory that lifts an <code>Alg[[A] =&gt;&gt; Mirra[D, A]]</code> into a <code>ULayer[Alg[Task]]</code> by backing it with a <code>zio.Ref[D]</code>.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;io.github.fristi&quot;</span><span> %% </span><span class="string-literal">&quot;mirra-zio&quot;</span><span> % </span><span class="string-literal">&quot;&lt;version&gt;&quot;</span></code></pre>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;io.github.fristi&quot;</span><span> %% </span><span class="string-literal">&quot;mirra-zio&quot;</span><span> % </span><span class="string-literal">&quot;0.2.0&quot;</span></code></pre>
         
         <h2 id="how-it-works" class="section"><a class="anchor-link left" href="#how-it-works"><i class="icofont-laika link">&#xef71;</i></a>How it works</h2>
         <p><code>MirraZIO.layer</code> wraps <code>Ref.make(initialState)</code> in a <code>ZLayer</code>, then uses <code>FunctorK[Alg].mapK</code> to rewrite every algebra method: each <code>Mirra[D, A]</code> (a <code>State[D, A]</code> under the hood) is run atomically against the ref via <code>Ref.modify</code>.</p>

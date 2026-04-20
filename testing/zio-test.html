@@ -105,7 +105,7 @@
 
         <h1 id="zio-test" class="title">ZIO Test</h1>
         <p>The <code>zio-test</code> module provides <code>MirraZIOSuite[Alg[_[_]]]</code> — a trait that extends <code>ZIOSpecDefault</code> with Mirra&#39;s mirror-testing machinery. The effect type is fixed to <code>Task</code> (<code>ZIO[Any, Throwable, *]</code>).</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;io.github.fristi&quot;</span><span> %% </span><span class="string-literal">&quot;mirra-zio-test&quot;</span><span> % </span><span class="string-literal">&quot;&lt;version&gt;&quot;</span></code></pre>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;io.github.fristi&quot;</span><span> %% </span><span class="string-literal">&quot;mirra-zio-test&quot;</span><span> % </span><span class="string-literal">&quot;0.2.0&quot;</span></code></pre>
         <p>Bridging to Cats Effect (so that Doobie&#39;s <code>Transactor</code> works with <code>Task</code>) is done via <code>zio-interop-cats</code>. Add it alongside the backend module:</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;dev.zio&quot;</span><span> %% </span><span class="string-literal">&quot;zio-interop-cats&quot;</span><span> % </span><span class="string-literal">&quot;&lt;version&gt;&quot;</span></code></pre>
         

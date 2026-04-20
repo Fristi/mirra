@@ -139,9 +139,9 @@
 </span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Universe</span><span>(</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>], </span><span class="identifier">orders</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Order</span><span>])
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">personsL</span><span> = </span><span class="type-name">Focus</span><span>[</span><span class="type-name">Universe</span><span>](</span><span class="identifier">_</span><span>.</span><span class="identifier">persons</span><span>)
-</span><span class="comment">// personsL: PLens[Universe, Universe, List[Person], List[Person]] = monocle.PLens$$anon$2@77ecc6d1
+</span><span class="comment">// personsL: PLens[Universe, Universe, List[Person], List[Person]] = monocle.PLens$$anon$2@39a8343d
 </span><span class="keyword">val</span><span> </span><span class="identifier">ordersL</span><span> = </span><span class="type-name">Focus</span><span>[</span><span class="type-name">Universe</span><span>](</span><span class="identifier">_</span><span>.</span><span class="identifier">orders</span><span>)
-</span><span class="comment">// ordersL: PLens[Universe, Universe, List[Order], List[Order]] = monocle.PLens$$anon$2@27489ba3
+</span><span class="comment">// ordersL: PLens[Universe, Universe, List[Order], List[Order]] = monocle.PLens$$anon$2@70725cd6
 </span><span>
 </span><span class="keyword">object</span><span> </span><span class="type-name">Universe</span><span>:
   </span><span class="keyword">val</span><span> </span><span class="identifier">zero</span><span>: </span><span class="type-name">Universe</span><span> = </span><span class="type-name">Universe</span><span>(</span><span class="type-name">Nil</span><span>, </span><span class="type-name">Nil</span><span>)
