@@ -3,7 +3,7 @@
 The `zio` module provides `MirraZIO.layer` — a factory that lifts an `Alg[[A] =>> Mirra[D, A]]` into a `ULayer[Alg[Task]]` by backing it with a `zio.Ref[D]`.
 
 ```scala
-libraryDependencies += "io.github.fristi" %% "mirra-zio" % "<version>"
+libraryDependencies += "io.github.fristi" %% "mirra-zio" % "@VERSION@"
 ```
 
 ## How it works

@@ -3,7 +3,7 @@
 The `skunk` module provides `SkunkSupport.rollbackTrans`, a natural transformation `Kleisli[F, Session[F], *] ~> F` that runs each property-test iteration inside a Skunk session that is **always rolled back**.
 
 ```scala
-libraryDependencies += "io.github.fristi" %% "mirra-skunk" % "<version>"
+libraryDependencies += "io.github.fristi" %% "mirra-skunk" % "@VERSION@"
 ```
 
 ## Implementation

@@ -3,7 +3,7 @@
 The `doobie` module provides `DoobieSupport.rollbackTrans`, a natural transformation `ConnectionIO ~> F` that runs each property-test iteration inside a transaction that is **always rolled back**. This keeps the database clean between iterations without restarting the container.
 
 ```scala
-libraryDependencies += "io.github.fristi" %% "mirra-doobie" % "<version>"
+libraryDependencies += "io.github.fristi" %% "mirra-doobie" % "@VERSION@"
 ```
 
 ## Implementation

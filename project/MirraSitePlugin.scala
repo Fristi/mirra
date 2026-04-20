@@ -5,6 +5,7 @@ import laika.helium.Helium
 import laika.helium.config.*
 import laika.sbt.LaikaConfig
 import laika.sbt.LaikaPlugin.autoImport.{laikaConfig, laikaExtensions, laikaIncludeAPI}
+import mdoc.MdocPlugin.autoImport.mdocVariables
 import org.typelevel.sbt.TypelevelSitePlugin
 import org.typelevel.sbt.TypelevelSitePlugin.autoImport.*
 import sbt.*
@@ -19,6 +20,9 @@ object MirraSitePlugin extends AutoPlugin {
     tlSitePublishBranch := Some("master"),
     laikaIncludeAPI := true,
     laikaExtensions := Seq(Markdown.GitHubFlavor, SyntaxHighlighting),
+    laikaConfig := {
+      laikaConfig.value.withConfigValue("version", mdocVariables.value("VERSION"))
+    },
     tlSiteHelium := {
       Helium.defaults.site
         .metadata(

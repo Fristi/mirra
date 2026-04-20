@@ -3,7 +3,7 @@
 The `cats-effect` module provides `MirraCatsEffect.make` — a factory that lifts an `Alg[[A] =>> Mirra[D, A]]` into `F[Alg[F]]` by backing it with a `cats.effect.Ref[F, D]`.
 
 ```scala
-libraryDependencies += "io.github.fristi" %% "mirra-cats-effect" % "<version>"
+libraryDependencies += "io.github.fristi" %% "mirra-cats-effect" % "@VERSION@"
 ```
 
 ## How it works

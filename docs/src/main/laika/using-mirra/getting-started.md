@@ -2,7 +2,11 @@
 
 The full example shown here is also available in the [`example`](https://github.com/Fristi/mirra/tree/master/example) module.
 
+Introduce the `mirra-core` dependency
 
+```scala
+libraryDependencies += "io.github.fristi" %% "mirra-core" % "@VERSION@"
+```
 
 ## 1. Define the algebra
 

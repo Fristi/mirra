@@ -1,9 +1,6 @@
 import sbt.Compile
 import sbt.Keys.libraryDependencies
 
-import laika.config._
-import laika.format.Markdown
-import laika.config.SyntaxHighlighting
 
 ThisBuild / organization         := "io.github.fristi"
 ThisBuild / organizationName     := "Fristi"

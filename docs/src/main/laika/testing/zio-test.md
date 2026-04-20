@@ -3,7 +3,7 @@
 The `zio-test` module provides `MirraZIOSuite[Alg[_[_]]]` — a trait that extends `ZIOSpecDefault` with Mirra's mirror-testing machinery. The effect type is fixed to `Task` (`ZIO[Any, Throwable, *]`).
 
 ```scala
-libraryDependencies += "io.github.fristi" %% "mirra-zio-test" % "<version>"
+libraryDependencies += "io.github.fristi" %% "mirra-zio-test" % "@VERSION@"
 ```
 
 Bridging to Cats Effect (so that Doobie's `Transactor` works with `Task`) is done via `zio-interop-cats`. Add it alongside the backend module:

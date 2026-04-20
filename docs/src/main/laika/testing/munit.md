@@ -3,7 +3,7 @@
 The `munit` module provides `MirraMunitSuite[F[_], Alg[_[_]]]` — a trait that wires `CatsEffectSuite` and `ScalaCheckEffectSuite` together with Mirra's mirror-testing machinery.
 
 ```scala
-libraryDependencies += "io.github.fristi" %% "mirra-munit" % "<version>"
+libraryDependencies += "io.github.fristi" %% "mirra-munit" % "@VERSION@"
 ```
 
 ## What is a SystemUnderTest?
