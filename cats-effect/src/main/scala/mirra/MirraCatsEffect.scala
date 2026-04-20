@@ -1,6 +1,7 @@
 package mirra
 
 import cats.effect.{Ref, Sync}
+import cats.syntax.all.*
 import cats.tagless.FunctorK
 import cats.~>
 
