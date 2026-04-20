@@ -66,15 +66,18 @@
 
   <ul class="nav-list">
     <li class="level1 active nav-leaf"><a href="#">Mirra</a></li>
-    <li class="level1 nav-leaf"><a href="getting-started.html">Getting Started</a></li>
-    <li class="level1 nav-leaf"><a href="combinators.html">Combinators Reference</a></li>
-    <li class="level1 nav-leaf"><a href="composing-repositories.html">Composing Repositories</a></li>
-    <li class="level1 nav-leaf"><a href="doobie.html">Doobie</a></li>
-    <li class="level1 nav-leaf"><a href="skunk.html">Skunk</a></li>
-    <li class="level1 nav-leaf"><a href="munit.html">munit + cats-effect</a></li>
-    <li class="level1 nav-leaf"><a href="zio-test.html">ZIO Test</a></li>
-    <li class="level1 nav-leaf"><a href="cats-effect.html">cats-effect</a></li>
-    <li class="level1 nav-leaf"><a href="zio.html">ZIO</a></li>
+    <li class="level1 nav-header">Using mirra</li>
+    <li class="level2 nav-leaf"><a href="using-mirra/getting-started.html">Getting Started</a></li>
+    <li class="level2 nav-leaf"><a href="using-mirra/combinators.html">Combinators Reference</a></li>
+    <li class="level2 nav-leaf"><a href="using-mirra/composing-repositories.html">Composing Repositories</a></li>
+    <li class="level1 nav-header">Mirror-based testing</li>
+    <li class="level2 nav-leaf"><a href="testing/munit.html">munit + cats-effect</a></li>
+    <li class="level2 nav-leaf"><a href="testing/zio-test.html">ZIO Test</a></li>
+    <li class="level2 nav-leaf"><a href="testing/doobie.html">Doobie</a></li>
+    <li class="level2 nav-leaf"><a href="testing/skunk.html">Skunk</a></li>
+    <li class="level1 nav-header">In-memory interpreters</li>
+    <li class="level2 nav-leaf"><a href="in-memory/cats-effect.html">cats-effect</a></li>
+    <li class="level2 nav-leaf"><a href="in-memory/zio.html">ZIO</a></li>
   </ul>
 
 </nav>
@@ -91,11 +94,7 @@
     <li class="level2 nav-leaf"><a href="#why-this-also-helps-your-service-tests">Why this also helps your service tests</a></li>
     <li class="level1 nav-node"><a href="#how-it-works">How it works</a></li>
     <li class="level2 nav-leaf"><a href="#what-properties-fall-out-of-this">What properties fall out of this?</a></li>
-    <li class="level1 nav-leaf"><a href="#key-concepts">Key concepts</a></li>
-    <li class="level1 nav-leaf"><a href="#modules">Modules</a></li>
-    <li class="level1 nav-leaf"><a href="#dependencies">Dependencies</a></li>
     <li class="level1 nav-leaf"><a href="#inspiration">Inspiration</a></li>
-    <li class="level1 nav-leaf"><a href="#license">License</a></li>
   </ul>
 
   <p class="footer"></p>
@@ -107,7 +106,6 @@
         <h1 id="mirra" class="title">Mirra</h1>
         <p><strong>Mirror-test your tagless final algebras in Scala.</strong></p>
         <p>Mirra verifies that a real repository implementation behaves the same way as a simple in-memory model — using property-based testing to catch the bugs you&#39;d never think to write a case for.</p>
-        <blockquote><strong>Status:</strong> This project is not active and was a proof-of-concept. It may still be useful as a reference or starting point.</blockquote>
         
         <h2 id="the-problem-duplicated-expectations" class="section"><a class="anchor-link left" href="#the-problem-duplicated-expectations"><i class="icofont-laika link">&#xef71;</i></a>The problem: duplicated expectations</h2>
         <p>When you property-test a repository directly, you end up re-implementing its logic in your assertions. Suppose you&#39;re testing a <code>deleteWhenOlderThen</code> method. Your property test generates random persons and a random age threshold, calls the repository, and then you need to assert the right people were deleted. To do that, you filter the generated input list yourself:</p>
@@ -155,62 +153,8 @@
         <h3 id="what-properties-fall-out-of-this" class="section"><a class="anchor-link left" href="#what-properties-fall-out-of-this"><i class="icofont-laika link">&#xef71;</i></a>What properties fall out of this?</h3>
         <p>Rather than listing properties upfront, I&#39;d describe it as: the model defines the expected semantics; anything the real implementation does differently is a bug. The specific property names (locality, idempotency, etc.) are just post-hoc labels for classes of divergence you observe. The strength of the approach is you don&#39;t need to enumerate them — but that also means gaps in your model or generator leave blind spots.</p>
         
-        <h2 id="key-concepts" class="section"><a class="anchor-link left" href="#key-concepts"><i class="icofont-laika link">&#xef71;</i></a>Key concepts</h2>
-        <p><strong><code>Mirra[S, A]</code></strong> — A <code>State</code>-like monad with built-in helpers for modeling CRUD operations (<code>insertMany</code>, <code>delete</code>, <code>all</code>, <code>unit</code>, etc.). Uses Monocle lenses to target collections within your state type <code>S</code>. This is where your expected behavior lives — in one place, as a real implementation, not scattered across test assertions.</p>
-        <p><strong><code>SystemUnderTest</code></strong> — Wires together a real implementation and a model using <code>SemigroupalK</code> to run both through the same algebra simultaneously. Accepts a natural transformation <code>TransactionEffect ~&gt; F</code> (or <code>~&gt; Task</code> for ZIO) that interprets real database actions.</p>
-        <p><strong><code>assertMirroring</code></strong> — Executes the program against both interpreters, diffs the results, and fails the test if they diverge.</p>
-        <p><strong><code>MirraMunitSuite[F[_], Alg[_[_]]]</code></strong> — A munit trait providing <code>assertMirroring</code>. Extends <code>CatsEffectSuite</code> and <code>ScalaCheckEffectSuite</code>; mix it into your test suite and implement <code>bootstrapSystemUnderTest</code>.</p>
-        <p><strong><code>MirraZIOSuite[Alg[_[_]]]</code></strong> — A ZIO Test equivalent of <code>MirraMunitSuite</code>. Extends <code>ZIOSpecDefault</code>; the effect type is fixed to <code>Task</code>. Property inputs come from ZIO Test&#39;s built-in <code>Gen</code>; resource management uses <code>ZLayer</code> + <code>provideShared</code>.</p>
-        <p><strong><code>FunctorK</code> / <code>SemigroupalK</code></strong> — Type classes from <a href="https://typelevel.org/cats-tagless/">cats-tagless</a> that lift familiar abstractions to the level of type constructors of kind <code>(* -&gt; *) -&gt; *</code> — i.e., algebras whose effect type is a parameter. <code>FunctorK</code> lets you map the effect type of an algebra (e.g. turn <code>Alg[IO]</code> into <code>Alg[Option]</code>). <code>SemigroupalK</code> lets you combine two interpretations into one that runs both simultaneously — which is exactly how <code>SystemUnderTest</code> wires the real implementation together with the in-memory model. Both are derived automatically with <code>Derive.functorK</code> / <code>Derive.semigroupalK</code>. See the <a href="https://typelevel.org/cats-tagless/">cats-tagless documentation</a> to learn more.</p>
-        <p><strong>State monad</strong> — <code>Mirra[S, A]</code> is built on top of the <code>State[S, A]</code> monad: a pure description of a computation that reads from and writes to a value of type <code>S</code>, returning a result of type <code>A</code>. Sequencing <code>State</code> actions threads the state through automatically without any mutable variables. If you are new to the State monad, the <a href="https://typelevel.org/cats/datatypes/state.html">Cats documentation</a> has a gentle introduction.</p>
-        <p><strong>Lenses</strong> — Mirra uses <a href="https://www.optics.dev/Monocle/">Monocle</a> lenses to focus on a specific collection within your state type <code>S</code>. A lens is a composable, type-safe getter/setter pair: given a large state object, a lens lets you zoom in on one field, apply a transformation, and return the updated whole — without touching anything else. See the <a href="https://www.optics.dev/Monocle/">Monocle documentation</a> for a full introduction to optics.</p>
-        
-        <h2 id="modules" class="section"><a class="anchor-link left" href="#modules"><i class="icofont-laika link">&#xef71;</i></a>Modules</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Module</th>
-              <th>What it provides</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>core</code></td>
-              <td><code>Mirra[S, A]</code>, <code>MirraSyntax</code></td>
-            </tr>
-            <tr>
-              <td><code>munit</code></td>
-              <td><code>MirraMunitSuite[F, Alg]</code> — munit + cats-effect + ScalaCheck integration</td>
-            </tr>
-            <tr>
-              <td><code>zio-test</code></td>
-              <td><code>MirraZIOSuite[Alg]</code> — ZIO Test integration (effect fixed to <code>Task</code>)</td>
-            </tr>
-            <tr>
-              <td><code>doobie</code></td>
-              <td><code>DoobieSupport.rollbackTrans</code> — <code>ConnectionIO ~&gt; F</code> with always-rollback</td>
-            </tr>
-            <tr>
-              <td><code>skunk</code></td>
-              <td><code>SkunkSupport.rollbackTrans</code> — <code>Kleisli[F, Session[F], *] ~&gt; F</code> with always-rollback</td>
-            </tr>
-          </tbody>
-        </table>
-        
-        <h2 id="dependencies" class="section"><a class="anchor-link left" href="#dependencies"><i class="icofont-laika link">&#xef71;</i></a>Dependencies</h2>
-        <p>Built with Scala 3.</p>
-        <p><strong>Core:</strong> <a href="https://github.com/typelevel/cats-tagless">cats-tagless</a> (FunctorK / SemigroupalK derivation), <a href="https://github.com/optics-dev/Monocle">Monocle</a> (lenses for state manipulation).</p>
-        <p><strong>munit module:</strong> <a href="https://scalameta.org/munit/">munit</a>, <a href="https://github.com/typelevel/munit-cats-effect">munit-cats-effect</a>, <a href="https://github.com/typelevel/scalacheck-effect">scalacheck-effect-munit</a>.</p>
-        <p><strong>zio-test module:</strong> <a href="https://zio.dev/">ZIO</a> (<code>zio</code>, <code>zio-test</code>, <code>zio-test-sbt</code>).</p>
-        <p><strong>doobie module:</strong> <a href="https://github.com/tpolecat/doobie">Doobie</a>.</p>
-        <p><strong>skunk module:</strong> <a href="https://github.com/tpolecat/skunk">Skunk</a>.</p>
-        <p><strong>Example module:</strong> Doobie + Skunk + ZIO, <a href="https://github.com/zio/interop-cats">zio-interop-cats</a> (bridges <code>Task</code> to Cats Effect <code>Async</code>), <a href="https://www.testcontainers.org/">Testcontainers</a> (PostgreSQL).</p>
-        
         <h2 id="inspiration" class="section"><a class="anchor-link left" href="#inspiration"><i class="icofont-laika link">&#xef71;</i></a>Inspiration</h2>
         <p>This library implements the <a href="https://fsharpforfunandprofit.com/posts/property-based-testing-2/#test-oracle">test oracle</a> pattern described by Scott Wlaschin, applied to tagless final algebras: maintain a simplified model alongside the system under test, apply the same operations to both, and compare final states.</p>
-        
-        <h2 id="license" class="section"><a class="anchor-link left" href="#license"><i class="icofont-laika link">&#xef71;</i></a>License</h2>
-        <p>This project is archived. Feel free to use it as a reference or fork it for your own needs.</p>
 
         
 <hr class="footer-rule"/>
