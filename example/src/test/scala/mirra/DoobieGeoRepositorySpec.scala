@@ -14,7 +14,7 @@ import scala.concurrent.duration.*
 
 class DoobieGeoRepositorySpec extends MirraMunitSuite[IO, GeoRepository] with TestContainerForAll {
 
-  override val munitIOTimeout: Duration = 3.minutes
+  override val munitIOTimeout: Duration = 1.minutes
 
   override val containerDef: PostgreSQLContainer.Def = PostgreSQLContainer.Def(
     dockerImageName = DockerImageName.parse("postgis/postgis:15-3.3").asCompatibleSubstituteFor("postgres"),
@@ -29,8 +29,12 @@ class DoobieGeoRepositorySpec extends MirraMunitSuite[IO, GeoRepository] with Te
 
   override def bootstrapSystemUnderTest(c: Containers): Resource[IO, SystemUnderTest] = {
     val tx = DoobieSupport.commitTrans[IO]("org.postgresql.Driver", c.jdbcUrl, c.username, c.password)
-    Resource.eval(tx(DoobieGeoRepository.setup)) *>
-      Resource.pure(new SystemUnderTest((), DoobieGeoRepository, MirraGeoRepository, tx))
+
+    for {
+      _ <- Resource.eval(IO.println("Starting to setup.."))
+      _ <- Resource.eval(tx(DoobieGeoRepository.setup))
+      _ <- Resource.eval(IO.println("Done with setup.."))
+    } yield new SystemUnderTest((), DoobieGeoRepository, MirraGeoRepository, tx)
   }
 
   // PostGIS and our Scala formula may differ by sub-metre rounding; 1 m tolerance is sufficient.

@@ -11,6 +11,8 @@ object MirraGeoRepository extends GeoRepository[[A] =>> Mirra[Unit, A]] {
     Mirra.succeed(compute(lon1, lat1, lon2, lat2))
 
   private def compute(lon1: Double, lat1: Double, lon2: Double, lat2: Double): Double = {
+    println(s"compute start ($lon1, $lat1) .. ($lon2, $lat2)")
+
     val lat1R = math.toRadians(lat1)
     val lat2R = math.toRadians(lat2)
     val dLon  = math.toRadians(lon2 - lon1)
@@ -19,6 +21,8 @@ object MirraGeoRepository extends GeoRepository[[A] =>> Mirra[Unit, A]] {
     val cosAngle = (math.sin(lat1R) * math.sin(lat2R) +
                     math.cos(lat1R) * math.cos(lat2R) * math.cos(dLon))
       .max(-1.0).min(1.0)
-    math.acos(cosAngle) * EarthRadiusMeters
+    val res = math.acos(cosAngle) * EarthRadiusMeters
+    println(s"compute done ($lon1, $lat1) .. ($lon2, $lat2) -> $res")
+    MirraGeoRepository
   }
 }
