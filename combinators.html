@@ -73,6 +73,8 @@
     <li class="level1 nav-leaf"><a href="skunk.html">Skunk</a></li>
     <li class="level1 nav-leaf"><a href="munit.html">munit + cats-effect</a></li>
     <li class="level1 nav-leaf"><a href="zio-test.html">ZIO Test</a></li>
+    <li class="level1 nav-leaf"><a href="cats-effect.html">cats-effect</a></li>
+    <li class="level1 nav-leaf"><a href="zio.html">ZIO</a></li>
   </ul>
 
 </nav>
@@ -134,9 +136,9 @@
 </span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Universe</span><span>(</span><span class="identifier">persons</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Person</span><span>], </span><span class="identifier">orders</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Order</span><span>])
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">personsL</span><span> = </span><span class="type-name">Focus</span><span>[</span><span class="type-name">Universe</span><span>](</span><span class="identifier">_</span><span>.</span><span class="identifier">persons</span><span>)
-</span><span class="comment">// personsL: PLens[Universe, Universe, List[Person], List[Person]] = monocle.PLens$$anon$2@5e4d8208
+</span><span class="comment">// personsL: PLens[Universe, Universe, List[Person], List[Person]] = monocle.PLens$$anon$2@5ff68b8b
 </span><span class="keyword">val</span><span> </span><span class="identifier">ordersL</span><span> = </span><span class="type-name">Focus</span><span>[</span><span class="type-name">Universe</span><span>](</span><span class="identifier">_</span><span>.</span><span class="identifier">orders</span><span>)
-</span><span class="comment">// ordersL: PLens[Universe, Universe, List[Order], List[Order]] = monocle.PLens$$anon$2@3781b674
+</span><span class="comment">// ordersL: PLens[Universe, Universe, List[Order], List[Order]] = monocle.PLens$$anon$2@25846a98
 </span><span>
 </span><span class="keyword">object</span><span> </span><span class="type-name">Universe</span><span>:
   </span><span class="keyword">val</span><span> </span><span class="identifier">zero</span><span>: </span><span class="type-name">Universe</span><span> = </span><span class="type-name">Universe</span><span>(</span><span class="type-name">Nil</span><span>, </span><span class="type-name">Nil</span><span>)
