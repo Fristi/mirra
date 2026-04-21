@@ -60,8 +60,6 @@ jobs:
 
       - uses: sbt/setup-sbt@v1
 
-      - name: Generate site
-        run: sbt docs/tlSite
       - uses: actions/setup-node@v4
         with:
           node-version: 20
