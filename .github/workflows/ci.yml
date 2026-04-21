@@ -96,13 +96,16 @@ jobs:
           path: docs/.vitepress/dist
 
   site-deploy:
+    needs: site-build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    needs: site-build
-    runs-on: ubuntu-latest
-    name: Deploy
+
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v5
