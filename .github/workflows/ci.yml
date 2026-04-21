@@ -46,15 +46,8 @@ jobs:
       - name: Run example tests (requires Docker)
         run: sbt "example/test"
 
-  site:
+  site-build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - uses: actions/checkout@v4
@@ -85,6 +78,17 @@ jobs:
         with:
           path: docs/.vitepress/dist
 
+  site-deploy:
+    needs: site-build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - id: deployment
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
         uses: actions/deploy-pages@v4
