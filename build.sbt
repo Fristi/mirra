@@ -126,12 +126,14 @@ val example =
 
 lazy val docs = project
   .in(file("docs"))
-  .enablePlugins(MirraSitePlugin)
+  .enablePlugins(MdocPlugin)
   .dependsOn(core, doobie, skunk, munit, zioTest, catsEffect, zio)
   .settings(commonSettings)
   .settings(
     publish / skip := true,
-    mdocIn := (Compile / sourceDirectory).value / "laika",
+    mdocIn := (ThisBuild / baseDirectory).value / "docs-src",
+    mdocOut := baseDirectory.value,
+    mdocVariables := Map("VERSION" -> version.value),
     libraryDependencies ++= Seq(
       "org.tpolecat" %% "doobie-postgres"                  % "1.0.0-RC12",
       "com.dimafeng" %% "testcontainers-scala-postgresql"  % "0.44.1",

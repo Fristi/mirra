@@ -68,4 +68,3 @@ Rather than listing properties upfront, I'd describe it as: the model defines th
 ## Inspiration
 
 This library implements the [test oracle](https://fsharpforfunandprofit.com/posts/property-based-testing-2/#test-oracle) pattern described by Scott Wlaschin, applied to tagless final algebras: maintain a simplified model alongside the system under test, apply the same operations to both, and compare final states.
-
