@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  base: '/',
   title: 'Mirra',
   description: 'Mirror-test your tagless final algebras in Scala',
   themeConfig: {
