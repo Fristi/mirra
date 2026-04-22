@@ -135,6 +135,21 @@ trait MirraMunitSuite[F[_]: MonadCancelThrow, Alg[_[_]]: SemigroupalK] extends C
   /** Run `f` against both interpreters and assert the results are equal.
     *
     * A failed equality check surfaces the two differing values via munit's `assertEquals`.
+    *
+    * == Approximate equality ==
+    *
+    * The comparison is driven by the implicit `Compare[A, A]` instance.  When exact structural
+    * equality is too strict — for example, when the real database returns floating-point
+    * coordinates that differ from the in-memory model by a rounding error — supply a custom
+    * `Compare` instance in scope:
+    *
+    * {{{
+    * given Compare[Location, Location] with
+    *   def isEqual(a: Location, b: Location): Boolean =
+    *     math.abs(a.lat - b.lat) < 1e-6 && math.abs(a.lng - b.lng) < 1e-6
+    * }}}
+    *
+    * munit's `assertEquals` will pick up this instance automatically.
     */
   def assertMirroring[A](c: BootstrapContext)(f: SystemUnderTest#Paired => PairedEffect[A])(implicit C: Compare[A, A], L: Location): F[Unit] =
     bootstrapSystemUnderTest(c).use(_.eval(f).map { case (left, right) => assertEquals(left, right) })

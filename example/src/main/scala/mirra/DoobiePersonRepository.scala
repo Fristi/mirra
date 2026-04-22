@@ -3,7 +3,7 @@ package mirra
 import doobie._
 import doobie.implicits.*
 import doobie.postgres.implicits.*
-import cats.implicits._
+import cats.implicits.*
 
 object DoobiePersonRepository extends PersonRepository[ConnectionIO] {
 
