@@ -32,11 +32,7 @@ class DoobieGeoRepositorySpec extends MirraMunitSuite[IO, GeoRepository] with Te
   override def bootstrapSystemUnderTest(c: Containers): Resource[IO, SystemUnderTest] = {
     val tx = DoobieSupport.commitTrans[IO]("org.postgresql.Driver", c.jdbcUrl, c.username, c.password)
 
-    for {
-      _ <- Resource.eval(IO.println("Starting to setup.."))
-      _ <- Resource.eval(tx(DoobieGeoRepository.setup))
-      _ <- Resource.eval(IO.println("Done with setup.."))
-    } yield new SystemUnderTest((), DoobieGeoRepository, MirraGeoRepository, tx)
+    Resource.eval(tx(DoobieGeoRepository.setup)).as(new SystemUnderTest((), DoobieGeoRepository, MirraGeoRepository, tx))
   }
 
   // PostGIS and our Scala formula may differ by sub-metre rounding; 1 m tolerance is sufficient.
@@ -49,8 +45,10 @@ class DoobieGeoRepositorySpec extends MirraMunitSuite[IO, GeoRepository] with Te
   test("distanceSphere matches PostGIS ST_DistanceSphere") {
     PropF.forAllF(genLon, genLat, genLon, genLat) { (lon1, lat1, lon2, lat2) =>
       withContainers { container =>
-        assertMirroring(container) { x =>
-          x.distanceSphere(lon1, lat1, lon2, lat2)
+        bootstrapSystemUnderTest(container).use { sut =>
+          sut.eval(_.distanceSphere(lon1, lat1, lon2, lat2)).map { case (real, model) =>
+            assertEquals(real, model)
+          }
         }
       }
     }
