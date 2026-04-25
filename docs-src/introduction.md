@@ -2,12 +2,27 @@
 
 **Mirror-test your tagless final algebras in Scala.**
 
-Mirra verifies that a real repository implementation behaves the same way as a simple in-memory model — using property-based testing to catch the bugs you'd never think to write a case for.
+Mirra makes it easy to build in-memory implementations of tagless final repository algebras. Once you have one, several things become possible: mirror-testing against a real database, fast service-layer tests, and temporary in-memory stand-ins during development.
 
+## What Mirra gives you
 
-## The problem: duplicated expectations
+### 1. Easy in-memory implementations
 
-When you property-test a repository directly, you end up re-implementing its logic in your assertions. Suppose you're testing a `deleteWhenOlderThen` method. Your property test generates random persons and a random age threshold, calls the repository, and then you need to assert the right people were deleted. To do that, you filter the generated input list yourself:
+Mirra provides `Mirra[S, *]`, a specialized `State` monad with built-in CRUD combinators (`insertMany`, `delete`, `all`, etc.) that operate over a simple in-memory state `S` using Monocle lenses. These combinators cover the common patterns, so you spend almost no time writing boilerplate — you describe the shape of your state and lens into it, and Mirra handles the list semantics.
+
+### 2. Mirror-testing against a real database
+
+#### Why property-based testing for databases at all?
+
+Unit tests with hand-picked examples are good at verifying known cases. What they miss are the cases you didn't think to write. Property-based testing generates hundreds of random inputs, which tends to surface two classes of bug that example tests routinely miss:
+
+**Data preservation.** Your Scala model has a `String` field. Your schema has `VARCHAR(50)`. For most test data that works fine — but a generator that produces strings up to length 200 will eventually find the truncation. The same applies to numeric precision (a `Double` that doesn't round-trip through a `NUMERIC(10,2)` column), timezone handling, null semantics, and any other mismatch between your domain types and the database's type system. These bugs only show up under data you wouldn't normally reach for when writing an example test.
+
+**Locality of queries and mutations.** A `delete` that should only affect matching rows shouldn't touch anything else. An `update` on one record shouldn't bleed into another. Property-based tests generate multiple records at once, including records with similar but distinct values, which makes it much more likely to catch a query that's too broad — a missing `WHERE` clause, an off-by-one in a range filter, or a join condition that accidentally matches more rows than intended.
+
+#### The duplicated-expectations trap
+
+Property-testing a repository directly has a subtle trap: you end up re-implementing its logic in your assertions. Suppose you're testing a `deleteWhenOlderThen` method. Your property test generates random persons and a random age threshold, calls the repository, and then you need to assert the right people were deleted:
 
 ```scala
 prop { (persons: List[Person], age: Int) =>
@@ -20,15 +35,11 @@ prop { (persons: List[Person], age: Int) =>
 }
 ```
 
-This is fragile. Your assertion duplicates the exact filtering logic the repository is supposed to implement. If you get the assertion wrong (off-by-one, wrong comparison operator, edge case), the test is worthless — and you won't know it. You've encoded your expectations twice: once in the implementation, once in the test, and you're hoping they match.
+Your assertion duplicates the exact filtering logic the repository is supposed to implement. If you get the assertion wrong (off-by-one, wrong comparison operator, edge case), the test is worthless — and you won't know it.
 
-## The solution: make the expectations an executable model
+The fix is to replace ad-hoc assertions with a proper in-memory implementation of the same algebra. This is the [test oracle](https://fsharpforfunandprofit.com/posts/property-based-testing-2/#test-oracle) pattern: instead of asserting _what_ the result should be, you assert that two implementations _agree_.
 
-Instead of scattering filtering logic across assertions, **move it into a proper in-memory implementation** of the same algebra. This model is trivially simple — just list operations on a case class — so it's easy to get right. Then run the same operations against both the real implementation and the model, and compare results.
-
-This is the [test oracle](https://fsharpforfunandprofit.com/posts/property-based-testing-2/#test-oracle) pattern: you don't assert _what_ the result should be, you assert that two implementations _agree_.
-
-The expectations now live in one place (the model), they're a real runnable implementation rather than ad-hoc assertions, and every property test is just: "does the real thing do the same as the model?"
+Wire both into a `SystemUnderTest`, which uses `SemigroupalK` (from cats-tagless) to run the same program against both interpreters simultaneously:
 
 ```
   Generate random data
@@ -45,19 +56,23 @@ The expectations now live in one place (the model), they're a real runnable impl
   result₁ ═══ result₂ ?
 ```
 
-If they diverge, either the real implementation has a bug, or the model is wrong — both of which are valuable to discover.
+If they diverge, either the real implementation has a bug, or the model is wrong — both worth finding.
 
-### Why this also helps your service tests
+### 3. Fast, accurate service-layer tests
 
-Once you've proven the in-memory model is faithful to the real implementation, you can use that model as a drop-in replacement in your service-layer unit tests. No database, no containers, no network — just fast, deterministic tests that you _know_ are behaviorally accurate, because the model has been validated against the real thing.
+Once the in-memory model is validated against the real implementation, you can use it as a drop-in replacement in service-layer unit tests. No database, no containers, no network — just fast, deterministic tests that you _know_ are behaviorally accurate, because the model has been validated against the real thing.
 
 This is much better than mocks: a mock returns whatever you tell it to, even outputs the real implementation would never produce for a given input. A validated in-memory model can't lie that way.
+
+### 4. Temporary in-memory stand-ins
+
+During early development, before a real backend exists, a Mirra implementation can serve as a temporary stand-in. Because it's based on `scala.List` semantics, it is not appropriate for large collections — time and space complexity will not match a proper database — but for getting business logic off the ground before infrastructure is ready, it works well.
 
 ## How it works
 
 1. **Define** a tagless final algebra for your repository.
 2. **Implement** it for real — against a database, HTTP API, etc.
-3. **Model** it with `Mirra[S, *]`, a specialized `State` monad with built-in CRUD helpers (`insertMany`, `delete`, `all`, etc.) that operate over a simple in-memory state `S` using Monocle lenses.
+3. **Model** it with `Mirra[S, *]`, using the built-in CRUD combinators and Monocle lenses over your state type `S`.
 4. **Wire** both into a `SystemUnderTest`, which uses `SemigroupalK` (from cats-tagless) to run the same program against both interpreters simultaneously.
 5. **Assert mirroring** — for any randomly generated input, both must produce the same result.
 
